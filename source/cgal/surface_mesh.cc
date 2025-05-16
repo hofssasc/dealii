@@ -38,6 +38,7 @@ namespace
     const auto reference_cell_type = face->reference_cell();
     std::vector<typename CGAL_Mesh::Vertex_index> indices;
 
+
     if (reference_cell_type == ReferenceCells::Line)
       {
         mesh.add_edge(deal2cgal.at(face->vertex_index(0)),
@@ -48,20 +49,50 @@ namespace
         indices = {deal2cgal.at(face->vertex_index(0)),
                    deal2cgal.at(face->vertex_index(1)),
                    deal2cgal.at(face->vertex_index(2))};
+
+        if (clockwise_ordering == true)
+          std::reverse(indices.begin(), indices.end());
+
+        //+++++debug++++++
+        std::cout << "add_facet with clockwise_ordering " << clockwise_ordering << " :" << std::endl;
+        auto v0 = mesh.point(deal2cgal.at(face->vertex_index(0)));
+        auto v1 = mesh.point(deal2cgal.at(face->vertex_index(1)));
+        auto v2 = mesh.point(deal2cgal.at(face->vertex_index(2)));
+
+        std::cout << "( " << v0[0] << ", " << v0[1] << ", " << v0[2] << " )" <<std::endl;
+        std::cout << "( " << v1[0] << ", " << v1[1] << ", " << v1[2] << " )" <<std::endl;
+        std::cout << "( " << v2[0] << ", " << v2[1] << ", " << v2[2] << " )" <<std::endl;
+        //+++++debug++++++
       }
 
     else if (reference_cell_type == ReferenceCells::Quadrilateral)
-      {
+    {
+        
         indices = {deal2cgal.at(face->vertex_index(0)),
-                   deal2cgal.at(face->vertex_index(1)),
-                   deal2cgal.at(face->vertex_index(3)),
-                   deal2cgal.at(face->vertex_index(2))};
+          deal2cgal.at(face->vertex_index(2)),
+          deal2cgal.at(face->vertex_index(3)),
+          deal2cgal.at(face->vertex_index(1))};
+
+        if (clockwise_ordering == false)
+          std::reverse(indices.begin(), indices.end());
+
+
+        //+++++debug++++++
+        std::cout << "add_facet with clockwise_ordering " << clockwise_ordering << " :" << std::endl;
+        auto v0 = mesh.point(indices[0]);
+        auto v1 = mesh.point(indices[1]);
+        auto v2 = mesh.point(indices[2]);
+        auto v3 = mesh.point(indices[3]);
+        
+        std::cout << "( " << v0[0] << ", " << v0[1] << ", " << v0[2] << " )" <<std::endl;
+        std::cout << "( " << v1[0] << ", " << v1[1] << ", " << v1[2] << " )" <<std::endl;
+        std::cout << "( " << v2[0] << ", " << v2[1] << ", " << v2[2] << " )" <<std::endl;
+        std::cout << "( " << v3[0] << ", " << v3[1] << ", " << v3[2] << " )" <<std::endl;
+        //+++++debug++++++
       }
     else
       DEAL_II_ASSERT_UNREACHABLE();
 
-    if (clockwise_ordering == true)
-      std::reverse(indices.begin(), indices.end());
 
     [[maybe_unused]] const auto new_face = mesh.add_face(indices);
     Assert(new_face != mesh.null_face(),
@@ -81,9 +112,12 @@ namespace
   {
     for (const auto i : cell->vertex_indices())
       {
-        deal2cgal[cell->vertex_index(i)] = mesh.add_vertex(
-          CGALWrappers::dealii_point_to_cgal_point<typename CGAL_Mesh::Point>(
-            cell->vertex(i)));
+        if(deal2cgal.find(cell->vertex_index(i)) == deal2cgal.end())
+        {
+          deal2cgal[cell->vertex_index(i)] = mesh.add_vertex(
+            CGALWrappers::dealii_point_to_cgal_point<typename CGAL_Mesh::Point>(
+              cell->vertex(i)));
+        }
       }
   }
 } // namespace
@@ -178,15 +212,22 @@ namespace CGALWrappers
         for (const auto &cell : tria.active_cell_iterators())
           {
             for (const auto &f : cell->face_indices())
-
+            {
               if (cell->face(f)->at_boundary())
                 {
                   map_vertices(cell->face(f), deal2cgal, mesh);
-                  add_facet(cell->face(f),
-                            deal2cgal,
-                            mesh,
-                            (f % 2 == 0 || cell->n_vertices() != 8));
+  
+                  // Check for standard orientation of faces
+                  bool face_is_clockwise_oriented =
+                    cell->reference_cell() != ReferenceCells::Hexahedron ||
+                    (f % 2 == 0);
+                  // Make sure that we revert the orientation if required
+                  if (cell->face_orientation(f) == false)
+                    face_is_clockwise_oriented = !face_is_clockwise_oriented;
+  
+                  add_facet(cell->face(f), deal2cgal, mesh, face_is_clockwise_oriented);
                 }
+            }
           }
       }
     else
