@@ -26,6 +26,10 @@
 #include <CGAL/IO/io.h>
 #include <deal.II/cgal/surface_mesh.h>
 
+//added
+#include <CGAL/Polygon_mesh_processing/orientation.h>
+//added
+
 #include "../tests.h"
 
 
@@ -56,6 +60,16 @@ test()
       dealii_cell_to_cgal_surface_mesh(cell, *mapping, mesh);
 
       Assert(mesh.is_valid(), dealii::ExcMessage("The CGAL mesh is not valid"));
+
+      //Added
+      //doesn t work for Wege
+      if(dim == 3 && r_cell != ref_cells[3][2])
+      {
+        Assert(CGAL::is_closed(mesh), dealii::ExcMessage("The CGAL mesh is not closed"));
+        Assert(CGAL::Polygon_mesh_processing::is_outward_oriented(mesh) , dealii::ExcMessage("The normal vectors of the CGAL mesh are not oriented outwards"));
+      }
+      //Added
+
       deallog << "deal vertices: " << cell->n_vertices() << ", cgal vertices "
               << mesh.num_vertices() << std::endl;
       deallog << "deal faces: " << cell->n_faces() << ", cgal faces "

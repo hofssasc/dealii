@@ -28,6 +28,10 @@
 #include <deal.II/cgal/triangulation.h>
 #include <string.h>
 
+//added
+#include <CGAL/Polygon_mesh_processing/orientation.h>
+//added
+
 #include "../tests.h"
 
 using namespace CGALWrappers;
@@ -65,9 +69,25 @@ test()
   dealii_tria_to_cgal_surface_mesh(tria0, surface_mesh0);
   dealii_tria_to_cgal_surface_mesh(tria1, surface_mesh1);
 
+  //Added (now commented out since not needed anymore)
   // close the surfaces
-  CGAL::Polygon_mesh_processing::stitch_borders(surface_mesh0);
-  CGAL::Polygon_mesh_processing::stitch_borders(surface_mesh1);
+  //CGAL::Polygon_mesh_processing::stitch_borders(surface_mesh0);
+  //CGAL::Polygon_mesh_processing::stitch_borders(surface_mesh1);
+  //Added (now commented out since not needed anymore)
+
+  
+  //Added
+  Assert(surface_mesh0.is_valid() && surface_mesh1.is_valid(),
+             ExcMessage("The CGAL surface mesh is not valid."));
+  if(dim == 3)
+  {
+    Assert(CGAL::is_closed(surface_mesh0) && CGAL::is_closed(surface_mesh1)
+          ,dealii::ExcMessage("The CGAL mesh is not closed"));
+    Assert(CGAL::Polygon_mesh_processing::is_outward_oriented(surface_mesh0) &&
+          CGAL::Polygon_mesh_processing::is_outward_oriented(surface_mesh1)
+          ,dealii::ExcMessage("The normal vectors of the CGAL mesh are not oriented outwards"));
+  }
+  //Added
 
   CGAL::Polygon_mesh_processing::triangulate_faces(surface_mesh0);
   CGAL::Polygon_mesh_processing::triangulate_faces(surface_mesh1);
