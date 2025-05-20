@@ -62,11 +62,18 @@ test()
       Assert(mesh.is_valid(), dealii::ExcMessage("The CGAL mesh is not valid"));
 
       //Added
-      //doesn t work for Wege
-      if(dim == 3 && r_cell != ref_cells[3][2])
+      if(dim == 3)
       {
-        Assert(CGAL::is_closed(mesh), dealii::ExcMessage("The CGAL mesh is not closed"));
-        Assert(CGAL::Polygon_mesh_processing::is_outward_oriented(mesh) , dealii::ExcMessage("The normal vectors of the CGAL mesh are not oriented outwards"));
+        Assert(CGAL::is_closed(mesh),
+          dealii::ExcMessage("The CGAL mesh is not closed"));
+
+        //orientation not supported for wedges, this needs special treatment
+        if(r_cell != ref_cells[3][2])
+        {
+          Assert(CGAL::Polygon_mesh_processing::is_outward_oriented(mesh),
+            dealii::ExcMessage(
+              "The normal vectors of the CGAL mesh are not oriented outwards"));
+        }
       }
       //Added
 
