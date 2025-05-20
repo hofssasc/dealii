@@ -26,9 +26,9 @@
 #include <CGAL/IO/io.h>
 #include <deal.II/cgal/surface_mesh.h>
 
-//added
+// added
 #include <CGAL/Polygon_mesh_processing/orientation.h>
-//added
+// added
 
 #include "../tests.h"
 
@@ -61,21 +61,22 @@ test()
 
       Assert(mesh.is_valid(), dealii::ExcMessage("The CGAL mesh is not valid"));
 
-      //Added
-      if(dim == 3)
-      {
-        Assert(CGAL::is_closed(mesh),
-          dealii::ExcMessage("The CGAL mesh is not closed"));
-
-        //orientation not supported for wedges, this needs special treatment
-        if(r_cell != ref_cells[3][2])
+      // Added
+      if (dim == 3)
         {
-          Assert(CGAL::Polygon_mesh_processing::is_outward_oriented(mesh),
-            dealii::ExcMessage(
-              "The normal vectors of the CGAL mesh are not oriented outwards"));
+          Assert(CGAL::is_closed(mesh),
+                 dealii::ExcMessage("The CGAL mesh is not closed"));
+
+          // orientation not supported for wedges, this needs special treatment
+          if (r_cell != ref_cells[3][2])
+            {
+              Assert(
+                CGAL::Polygon_mesh_processing::is_outward_oriented(mesh),
+                dealii::ExcMessage(
+                  "The normal vectors of the CGAL mesh are not oriented outwards"));
+            }
         }
-      }
-      //Added
+      // Added
 
       deallog << "deal vertices: " << cell->n_vertices() << ", cgal vertices "
               << mesh.num_vertices() << std::endl;

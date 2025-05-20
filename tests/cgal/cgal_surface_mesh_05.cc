@@ -57,8 +57,8 @@ test()
   dealii_tria_to_cgal_surface_mesh(tria1, surface_mesh1);
 
   // close the surfaces
-  //CGAL::Polygon_mesh_processing::stitch_borders(surface_mesh0);
-  //CGAL::Polygon_mesh_processing::stitch_borders(surface_mesh1);
+  // CGAL::Polygon_mesh_processing::stitch_borders(surface_mesh0);
+  // CGAL::Polygon_mesh_processing::stitch_borders(surface_mesh1);
 
   CGAL::Polygon_mesh_processing::triangulate_faces(surface_mesh0);
   CGAL::Polygon_mesh_processing::triangulate_faces(surface_mesh1);

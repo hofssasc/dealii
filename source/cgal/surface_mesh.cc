@@ -58,21 +58,22 @@ namespace
       }
 
     else if (reference_cell_type == ReferenceCells::Quadrilateral)
-    { 
-      if (clockwise_ordering == true)
       {
-        indices = {deal2cgal.at(face->vertex_index(0)),
-          deal2cgal.at(face->vertex_index(2)),
-          deal2cgal.at(face->vertex_index(3)),
-          deal2cgal.at(face->vertex_index(1))};
-      }else{
-        indices = {deal2cgal.at(face->vertex_index(0)),
-          deal2cgal.at(face->vertex_index(1)),
-          deal2cgal.at(face->vertex_index(3)),
-          deal2cgal.at(face->vertex_index(2))};
+        if (clockwise_ordering == true)
+          {
+            indices = {deal2cgal.at(face->vertex_index(0)),
+                       deal2cgal.at(face->vertex_index(2)),
+                       deal2cgal.at(face->vertex_index(3)),
+                       deal2cgal.at(face->vertex_index(1))};
+          }
+        else
+          {
+            indices = {deal2cgal.at(face->vertex_index(0)),
+                       deal2cgal.at(face->vertex_index(1)),
+                       deal2cgal.at(face->vertex_index(3)),
+                       deal2cgal.at(face->vertex_index(2))};
+          }
       }
-        
-    }
     else
       DEAL_II_ASSERT_UNREACHABLE();
 
@@ -94,12 +95,12 @@ namespace
   {
     for (const auto i : cell->vertex_indices())
       {
-        if(deal2cgal.find(cell->vertex_index(i)) == deal2cgal.end())
-        {
-          deal2cgal[cell->vertex_index(i)] = mesh.add_vertex(
-            CGALWrappers::dealii_point_to_cgal_point<typename CGAL_Mesh::Point>(
-              cell->vertex(i)));
-        }
+        if (deal2cgal.find(cell->vertex_index(i)) == deal2cgal.end())
+          {
+            deal2cgal[cell->vertex_index(i)] =
+              mesh.add_vertex(CGALWrappers::dealii_point_to_cgal_point<
+                              typename CGAL_Mesh::Point>(cell->vertex(i)));
+          }
       }
   }
 } // namespace
@@ -194,13 +195,16 @@ namespace CGALWrappers
         for (const auto &cell : tria.active_cell_iterators())
           {
             for (const auto &f : cell->face_indices())
-            {
-              if (cell->face(f)->at_boundary())
-                {
-                  map_vertices(cell->face(f), deal2cgal, mesh); 
-                  add_facet(cell->face(f), deal2cgal, mesh, (f % 2 == 0 || cell->n_vertices() != 8));
-                }
-            }
+              {
+                if (cell->face(f)->at_boundary())
+                  {
+                    map_vertices(cell->face(f), deal2cgal, mesh);
+                    add_facet(cell->face(f),
+                              deal2cgal,
+                              mesh,
+                              (f % 2 == 0 || cell->n_vertices() != 8));
+                  }
+              }
           }
       }
     else

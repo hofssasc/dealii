@@ -28,9 +28,9 @@
 #include <deal.II/cgal/triangulation.h>
 #include <string.h>
 
-//added
+// added
 #include <CGAL/Polygon_mesh_processing/orientation.h>
-//added
+// added
 
 #include "../tests.h"
 
@@ -54,14 +54,14 @@ test()
   if constexpr (spacedim == 2)
     {
       names_and_args = {{"hyper_cube", "0.0 : 1.0 : false"},
-                        {"hyper_ball", "0.,0. : 1. : false"}, 
+                        {"hyper_ball", "0.,0. : 1. : false"},
                         {"hyper_L", "0.0 : 1.0 : false"},
                         {"channel_with_cylinder", "0.03 : 2 : 2.0 : false"}};
     }
   else
     {
       names_and_args = {{"hyper_cube", "0.0 : 1.0 : false"},
-                        {"hyper_ball", "0.,0.,0. : 1. : false"}, 
+                        {"hyper_ball", "0.,0.,0. : 1. : false"},
                         {"hyper_L", "0.0 : 1.0 : false"},
                         {"channel_with_cylinder", "0.03 : 2 : 2.0 : false"}};
     }
@@ -79,16 +79,18 @@ test()
       Assert(surface_mesh.is_valid(),
              ExcMessage("The CGAL surface mesh is not valid."));
 
-      //Added
-      //CGAL::Polygon_mesh_processing::triangulate_faces(surface_mesh);
-      if(dim == 3)
-      {
-        Assert(CGAL::is_closed(surface_mesh)
-              ,dealii::ExcMessage("The CGAL mesh is not closed"));
-        Assert(CGAL::Polygon_mesh_processing::is_outward_oriented(surface_mesh)
-              ,dealii::ExcMessage("The normal vectors of the CGAL mesh are not oriented outwards"));
-      }
-      //Added
+      // Added
+      // CGAL::Polygon_mesh_processing::triangulate_faces(surface_mesh);
+      if (dim == 3)
+        {
+          Assert(CGAL::is_closed(surface_mesh),
+                 dealii::ExcMessage("The CGAL mesh is not closed"));
+          Assert(
+            CGAL::Polygon_mesh_processing::is_outward_oriented(surface_mesh),
+            dealii::ExcMessage(
+              "The normal vectors of the CGAL mesh are not oriented outwards"));
+        }
+      // Added
 
       // Now back to the original dealii tria.
       cgal_surface_mesh_to_dealii_triangulation(surface_mesh, tria_out);
