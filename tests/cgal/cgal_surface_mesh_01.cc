@@ -61,9 +61,9 @@ test()
 
       Assert(mesh.is_valid(), dealii::ExcMessage("The CGAL mesh is not valid"));
 
-      // Added
       if (dim == 3)
         {
+          // is closed and oriented only for 3 dimensional objects important
           Assert(CGAL::is_closed(mesh),
                  dealii::ExcMessage("The CGAL mesh is not closed"));
 
@@ -76,7 +76,6 @@ test()
                   "The normal vectors of the CGAL mesh are not oriented outwards"));
             }
         }
-      // Added
 
       deallog << "deal vertices: " << cell->n_vertices() << ", cgal vertices "
               << mesh.num_vertices() << std::endl;

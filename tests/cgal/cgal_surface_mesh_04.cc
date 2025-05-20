@@ -79,8 +79,6 @@ test()
       Assert(surface_mesh.is_valid(),
              ExcMessage("The CGAL surface mesh is not valid."));
 
-      // Added
-      // CGAL::Polygon_mesh_processing::triangulate_faces(surface_mesh);
       if (dim == 3)
         {
           Assert(CGAL::is_closed(surface_mesh),
@@ -90,7 +88,6 @@ test()
             dealii::ExcMessage(
               "The normal vectors of the CGAL mesh are not oriented outwards"));
         }
-      // Added
 
       // Now back to the original dealii tria.
       cgal_surface_mesh_to_dealii_triangulation(surface_mesh, tria_out);
