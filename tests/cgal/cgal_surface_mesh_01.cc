@@ -24,9 +24,8 @@
 #include <deal.II/grid/tria.h>
 
 #include <CGAL/IO/io.h>
-#include <deal.II/cgal/surface_mesh.h>
-
 #include <CGAL/Polygon_mesh_processing/orientation.h>
+#include <deal.II/cgal/surface_mesh.h>
 
 #include "../tests.h"
 

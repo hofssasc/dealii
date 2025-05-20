@@ -24,11 +24,10 @@
 #include <deal.II/grid/grid_out.h>
 #include <deal.II/grid/tria.h>
 
+#include <CGAL/Polygon_mesh_processing/orientation.h>
 #include <deal.II/cgal/surface_mesh.h>
 #include <deal.II/cgal/triangulation.h>
 #include <string.h>
-
-#include <CGAL/Polygon_mesh_processing/orientation.h>
 
 #include "../tests.h"
 
