@@ -26,9 +26,7 @@
 #include <CGAL/IO/io.h>
 #include <deal.II/cgal/surface_mesh.h>
 
-// added
 #include <CGAL/Polygon_mesh_processing/orientation.h>
-// added
 
 #include "../tests.h"
 

@@ -28,9 +28,7 @@
 #include <deal.II/cgal/triangulation.h>
 #include <string.h>
 
-// added
 #include <CGAL/Polygon_mesh_processing/orientation.h>
-// added
 
 #include "../tests.h"
 

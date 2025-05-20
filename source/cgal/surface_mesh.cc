@@ -38,13 +38,12 @@ namespace
     const auto reference_cell_type = face->reference_cell();
     std::vector<typename CGAL_Mesh::Vertex_index> indices;
 
-
     if (reference_cell_type == ReferenceCells::Line)
       {
         mesh.add_edge(deal2cgal.at(face->vertex_index(0)),
                       deal2cgal.at(face->vertex_index(1)));
 
-        if (clockwise_ordering == true)
+        if (clockwise_ordering)
           std::reverse(indices.begin(), indices.end());
       }
     else if (reference_cell_type == ReferenceCells::Triangle)
@@ -53,13 +52,13 @@ namespace
                    deal2cgal.at(face->vertex_index(1)),
                    deal2cgal.at(face->vertex_index(2))};
 
-        if (clockwise_ordering == true)
+        if (clockwise_ordering)
           std::reverse(indices.begin(), indices.end());
       }
 
     else if (reference_cell_type == ReferenceCells::Quadrilateral)
       {
-        if (clockwise_ordering == true)
+        if (clockwise_ordering)
           {
             indices = {deal2cgal.at(face->vertex_index(0)),
                        deal2cgal.at(face->vertex_index(2)),
