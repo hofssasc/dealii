@@ -58,9 +58,9 @@ test()
 
   // Ensure the meshes are closed
   Assert(CGAL::is_closed(surface_mesh0),
-         dealii::ExcMessage("The CGAL mesh 0 is not closed"));
+         ExcMessage("The CGAL mesh 0 is not closed"));
   Assert(CGAL::is_closed(surface_mesh1),
-         dealii::ExcMessage("The CGAL mesh 1 is not closed"));
+         ExcMessage("The CGAL mesh 1 is not closed"));
 
   // Surfaces automatically closed but still need to be triangulated
   // before using compute_boolean_operation
@@ -98,9 +98,9 @@ test()
 
   // Ensure the meshes are closed
   Assert(CGAL::is_closed(surface_mesh0),
-         dealii::ExcMessage("The CGAL mesh 0 is not closed"));
+         ExcMessage("The CGAL mesh 0 is not closed"));
   Assert(CGAL::is_closed(surface_mesh1),
-         dealii::ExcMessage("The CGAL mesh 1 is not closed"));
+         ExcMessage("The CGAL mesh 1 is not closed"));
 
   // Surfaces automatically closed but still need to be triangulated
   // before using compute_boolean_operation

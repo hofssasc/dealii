@@ -79,10 +79,10 @@ test()
       if (dim == 3)
         {
           Assert(CGAL::is_closed(surface_mesh),
-                 dealii::ExcMessage("The CGAL mesh is not closed"));
+                 ExcMessage("The CGAL mesh is not closed"));
           Assert(
             CGAL::Polygon_mesh_processing::is_outward_oriented(surface_mesh),
-            dealii::ExcMessage(
+            ExcMessage(
               "The normal vectors of the CGAL mesh are not oriented outwards"));
         }
 
