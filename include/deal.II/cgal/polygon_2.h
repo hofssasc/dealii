@@ -12,6 +12,11 @@
 #  include <CGAL/Polygon_2.h>
 
 
+//only for compute boolean operation
+#   include <CGAL/Boolean_set_operations_2.h>
+#   include <CGAL/Polygon_with_holes_2.h>
+#   include <deal.II/cgal/utilities.h>
+
 
 DEAL_II_NAMESPACE_OPEN
 
@@ -91,7 +96,34 @@ namespace CGALWrappers
       current_index = face_vertex_indices[current_index];
     }
   }
+
+  using CGALPolygonWithHoles = CGAL::Polygon_with_holes_2<K>;
+
+  void compute_boolean_operation(const CGALPolygon &polygon_1, const CGALPolygon &polygon_2, const BooleanOperation &boolean_operation, std::vector<CGALPolygonWithHoles> &polygon_out)
+  {
+    Assert( !(boolean_operation == BooleanOperation::compute_corefinement),
+            ExcMessage("Corefinement no usecase for 2D polygons"));
+
+    polygon_out.clear();
+
+    if(boolean_operation == BooleanOperation::compute_intersection)
+    {
+      CGAL::intersection(polygon_1, polygon_2, std::back_inserter(polygon_out));
+    }
+    else if(boolean_operation == BooleanOperation::compute_difference)
+    {
+      CGAL::difference(polygon_1, polygon_2, std::back_inserter(polygon_out));
+    }
+    else if((boolean_operation == BooleanOperation::compute_union))
+    {
+      polygon_out.resize(1);
+      CGAL::join(polygon_1, polygon_2, polygon_out[0]);
+    }
+  }
 }
+
+
+
 
 DEAL_II_NAMESPACE_CLOSE
 

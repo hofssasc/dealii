@@ -1183,10 +1183,10 @@ namespace NonMatching
     const std::vector<ImmersedSurfaceQuadrature<dim>> &quadrature_vector,
     const unsigned int                                 n_unfiltered_cells)
   {
-    Assert(
-      additional_data.use_global_weights == false,
-      ExcMessage(
-        "There is no known use-case for AdditionalData::use_global_weights=true and reinit_surface()"));
+    // Assert(
+    //   additional_data.use_global_weights == false,
+    //   ExcMessage(
+    //     "There is no known use-case for AdditionalData::use_global_weights=true and reinit_surface()"));
 
     Assert(additional_data.store_cells == false, ExcNotImplemented());
 

@@ -1,10 +1,10 @@
 // Convert a deal.II reference cell to a cgal polygon_2.
 #include <deal.II/base/config.h>
 #include <deal.II/fe/mapping_q.h>
-#include <deal.II/cgal/polygon_2.h>
 #include <deal.II/grid/grid_generator.h>
 #include <deal.II/grid/grid_tools.h>
 
+#include <deal.II/cgal/polygon_2.h>
 
 
 #include "../tests.h"
