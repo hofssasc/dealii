@@ -48,7 +48,7 @@ namespace CGALWrappers
         using CGALPolygon = CGAL::Polygon_2<K>;
         using CGALPolygonWithHoles = CGAL::Polygon_with_holes_2<K>;
         using Iso_rectangle_2 = CGAL::Iso_rectangle_2<K>;
-        using Segment_2 = CGAL::Segment_2<K>;
+        using CGALSegment2 = CGAL::Segment_2<K>;
         using Triangulation2 = CGAL::Delaunay_triangulation_2<K>;
 
     public:
@@ -172,17 +172,14 @@ namespace CGALWrappers
         location_to_geometry_vec.clear();
         location_to_geometry_vec.reserve(tria_unfitted.n_active_cells());
 
-        NonMatching::LocationToLevelSet inside;
-        NonMatching::LocationToLevelSet outside;
+        CGAL::Bounded_side inside_domain;
         if(boolean_operation == BooleanOperation::compute_intersection)
         {
-            inside = NonMatching::LocationToLevelSet::inside;
-            outside = NonMatching::LocationToLevelSet::outside;
+            inside_domain = CGAL::ON_BOUNDED_SIDE;
         }
         else if(boolean_operation == BooleanOperation::compute_difference)
         {
-            inside = NonMatching::LocationToLevelSet::outside;
-            outside = NonMatching::LocationToLevelSet::inside;
+            inside_domain = CGAL::ON_UNBOUNDED_SIDE;
         }
 
         // now find out if inside or not
@@ -199,21 +196,24 @@ namespace CGALWrappers
             {
                 auto result = CGAL::bounded_side_2(fitted_2D_mesh.begin(), fitted_2D_mesh.end(),
                                                    CGALWrappers::dealii_point_to_cgal_point<CGALPoint2, 2>(cell->vertex(i)));
-                inside_count += (result == CGAL::ON_BOUNDED_SIDE);
+                inside_count += (result == inside_domain);
             }
-            if (inside_count == 0)
+            if (inside_count == 0) //case 1: all vertices outside or on boundary: not considered (outside)
             {
-                location_to_geometry_vec.push_back(outside);
+                location_to_geometry_vec.push_back(NonMatching::LocationToLevelSet::outside);
                 //Assert(!CGAL::do_intersect(fitted_2D_mesh, polygon_cell), ExcMessage("cell classified as outside although intersected"));
             }
-            else if (inside_count == cell->n_vertices())
+            else if (inside_count == cell->n_vertices()) //case 2: all vertices inside: considered (inside)
             {
-                location_to_geometry_vec.push_back(inside);
+                location_to_geometry_vec.push_back(NonMatching::LocationToLevelSet::inside);
             }
-            else
+            else //case 3: at least one vertex inside and at least one on boundary or outside
             {
                 location_to_geometry_vec.push_back(NonMatching::LocationToLevelSet::intersected);
             }
+            //Note: construction of case 1 and 3 make sure that if two vertices are on the boundary the cell
+            // inside is considered cut and takes acount for the face integral. The cell outside also has 
+            // vertices on the boundary but is ignored because then the boundary integral would be performed twice
         }
     }
 
@@ -232,17 +232,14 @@ namespace CGALWrappers
         CGAL::Side_of_triangle_mesh<CGAL::Surface_mesh<CGALPoint>, K>
             inside_test(fitted_surface_mesh);
         
-        NonMatching::LocationToLevelSet inside;
-        NonMatching::LocationToLevelSet outside;
+        CGAL::Bounded_side inside_domain;
         if(boolean_operation == BooleanOperation::compute_intersection)
         {
-            inside = NonMatching::LocationToLevelSet::inside;
-            outside = NonMatching::LocationToLevelSet::outside;
+            inside_domain = CGAL::ON_BOUNDED_SIDE;
         }
         else if(boolean_operation == BooleanOperation::compute_difference)
         {
-            inside = NonMatching::LocationToLevelSet::outside;
-            outside = NonMatching::LocationToLevelSet::inside;
+            inside_domain = CGAL::ON_UNBOUNDED_SIDE;
         }
 
         for (const auto &cell : tria_unfitted.active_cell_iterators())
@@ -251,16 +248,16 @@ namespace CGALWrappers
             for (size_t i = 0; i < cell->n_vertices(); i++)
             {
                 auto result = inside_test(CGALWrappers::dealii_point_to_cgal_point<CGALPoint, 3>(cell->vertex(i)));
-                inside_count += (result == CGAL::ON_BOUNDED_SIDE);
+                inside_count += (result == inside_domain);
             }
 
             if (inside_count == 0)
             {
-                location_to_geometry_vec.push_back(outside);
+                location_to_geometry_vec.push_back(NonMatching::LocationToLevelSet::outside);
             }
             else if (inside_count == cell->n_vertices())
             {
-                location_to_geometry_vec.push_back(inside);
+                location_to_geometry_vec.push_back(NonMatching::LocationToLevelSet::inside);
             }
             else
             {
@@ -311,12 +308,124 @@ namespace CGALWrappers
         quad_cells = QGaussSimplex<2>(quadrature_order).mapped_quadrature(vec_of_simplices);
 
         // surface quadrature
+        std::vector<Point<2>> quadrature_points;
+        std::vector<double> quadrature_weights;
+        std::vector<Tensor<1, 2>> normals;
+        for(const auto &edge_boundary : fitted_2D_mesh.edges())
+        {
+            auto bs_1 = CGAL::bounded_side_2(
+                            polygon_cell.begin(), polygon_cell.end(),
+                            edge_boundary.source());
+            auto bs_2 = CGAL::bounded_side_2(
+                            polygon_cell.begin(), polygon_cell.end(),
+                            edge_boundary.target());
+
+            std::array<Point<2>, 2> segment;
+            if( bs_1 != CGAL::ON_UNBOUNDED_SIDE && 
+                bs_2 != CGAL::ON_UNBOUNDED_SIDE) //add directly
+            {
+                segment[0] = CGALWrappers::cgal_point_to_dealii_point<2>(edge_boundary.source());
+                segment[1] = CGALWrappers::cgal_point_to_dealii_point<2>(edge_boundary.target());
+            }
+            else if(bs_1 == CGAL::ON_BOUNDARY || bs_2 == CGAL::ON_BOUNDARY) //only point on boundary
+            {
+                continue;
+            }
+            else if(bs_1 == CGAL::ON_BOUNDED_SIDE) //find missing intersection point
+            {
+                for(const auto &edge_cell : polygon_cell.edges())
+                {
+                    auto result = CGAL::intersection(edge_cell, edge_boundary);
+                    if(result)
+                    {
+                        if(const CGALPoint2* point = boost::get<CGALPoint2>(&*result))
+                        {
+                            segment[0] = CGALWrappers::cgal_point_to_dealii_point<2>(edge_boundary.source());
+                            segment[1] = CGALWrappers::cgal_point_to_dealii_point<2>(*point);
+                            break;
+                        }
+                    }
+                }
+            }
+            else if(bs_2 == CGAL::ON_BOUNDED_SIDE) //find missing intersection point
+            {
+                for(const auto &edge_cell : polygon_cell.edges())
+                {
+                    auto result = CGAL::intersection(edge_cell, edge_boundary);
+                    if(result)
+                    {
+                        if(const CGALPoint2* point = boost::get<CGALPoint2>(&*result))
+                        {
+                            segment[0] = CGALWrappers::cgal_point_to_dealii_point<2>(*point);
+                            segment[1] = CGALWrappers::cgal_point_to_dealii_point<2>(edge_boundary.target());
+                            break;
+                        }
+                    }
+                }
+            }
+            else //find two missing points or nothing
+            {
+                int i = 0;
+                for(const auto &edge_cell : polygon_cell.edges())
+                {
+                    auto result = CGAL::intersection(edge_cell, edge_boundary);
+                    if(result)
+                    {
+                        if(const CGALPoint2* point = boost::get<CGALPoint2>(&*result))
+                        {
+                            segment[i] = CGALWrappers::cgal_point_to_dealii_point<2>(*point);
+                            i += 1;
+                            if(i == 2)
+                                break;
+                        }
+                    }
+                }
+
+                if(i < 2)
+                    continue;
+            }
+
+            std::array<dealii::Point<2>, 2> unit_segment;
+            mapping->transform_points_real_to_unit_cell(cell, segment, unit_segment);
+            auto quadrature = QGaussSimplex<1>(quadrature_order).compute_affine_transformation(unit_segment);
+            auto points = quadrature.get_points();
+            auto weights = quadrature.get_weights();
+
+            // compute normals
+            Tensor<1, 2> normal = unit_segment[1] - unit_segment[0];
+            std::swap(normal[0], normal[1]);
+
+            auto test_point = 0.5 * (unit_segment[1] + unit_segment[0]) + normal * 1;
+            auto flip = CGAL::bounded_side_2(
+                            polygon_cell.begin(), polygon_cell.end(),
+                            CGALPoint2(test_point[0], test_point[1]));
+            if(boolean_operation == BooleanOperation::compute_intersection &&
+                flip == CGAL::ON_BOUNDED_SIDE)
+            {
+                normal *= -1;
+            }
+            else if(boolean_operation == BooleanOperation::compute_difference &&
+                    flip == CGAL::ON_UNBOUNDED_SIDE)
+            {
+                normal *= -1;
+            }
+            normal /= normal.norm();
+
+
+            quadrature_points.insert(quadrature_points.end(), points.begin(), points.end());
+            quadrature_weights.insert(quadrature_weights.end(), weights.begin(), weights.end());
+            normals.insert(normals.end(), quadrature.size(), normal);
+
+        }
+        quad_surface = NonMatching::ImmersedSurfaceQuadrature<2>(quadrature_points, quadrature_weights, normals);
+        
+        
+        /*
         if(boolean_operation == BooleanOperation::compute_difference)
         {
             polygon_out_vec.clear();
             CGALWrappers::compute_boolean_operation(polygon_cell, fitted_2D_mesh, BooleanOperation::compute_intersection, polygon_out_vec);
         }
-
         std::vector<Point<2>> quadrature_points;
         std::vector<double> quadrature_weights;
         std::vector<Tensor<1, 2>> normals;
@@ -358,6 +467,7 @@ namespace CGALWrappers
             }
         }
         quad_surface = NonMatching::ImmersedSurfaceQuadrature<2>(quadrature_points, quadrature_weights, normals);
+        */
     }
 
     template <>
