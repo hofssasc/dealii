@@ -418,56 +418,6 @@ namespace CGALWrappers
 
         }
         quad_surface = NonMatching::ImmersedSurfaceQuadrature<2>(quadrature_points, quadrature_weights, normals);
-        
-        
-        /*
-        if(boolean_operation == BooleanOperation::compute_difference)
-        {
-            polygon_out_vec.clear();
-            CGALWrappers::compute_boolean_operation(polygon_cell, fitted_2D_mesh, BooleanOperation::compute_intersection, polygon_out_vec);
-        }
-        std::vector<Point<2>> quadrature_points;
-        std::vector<double> quadrature_weights;
-        std::vector<Tensor<1, 2>> normals;
-        for (size_t i = 0; i < polygon_out_vec.size(); i++)
-        {
-            for (const auto &edge_cut : polygon_out_vec[i].outer_boundary().edges())
-            {
-                bool is_dg_edge = false;
-                auto p_cut_1 = edge_cut.source();
-                auto p_cut_2 = edge_cut.target();
-                bool on_boundary_p_1 = 
-                        CGAL::bounded_side_2(fitted_2D_mesh.begin(), fitted_2D_mesh.end(),p_cut_1) == CGAL::ON_BOUNDARY;
-                bool on_boundary_p_2 =
-                        CGAL::bounded_side_2(fitted_2D_mesh.begin(), fitted_2D_mesh.end(),p_cut_2) == CGAL::ON_BOUNDARY;
-
-                if(on_boundary_p_1 && on_boundary_p_2)
-                {
-                    Point<2> source = CGALWrappers::cgal_point_to_dealii_point<2>(p_cut_1);
-                    Point<2> target = CGALWrappers::cgal_point_to_dealii_point<2>(p_cut_2);
-                    std::array<dealii::Point<2>, 2> unit_segment;
-                    mapping->transform_points_real_to_unit_cell(cell, {source, target}, unit_segment);
-                    auto quadrature = QGaussSimplex<1>(quadrature_order).compute_affine_transformation(unit_segment);
-                    auto points = quadrature.get_points();
-                    auto weights = quadrature.get_weights();
-    
-                    // compute normals
-                    Tensor<1, 2> normal = target - source;
-                    std::swap(normal[0], normal[1]);
-                    normal /= normal.norm();
-    
-                    quadrature_points.insert(quadrature_points.end(), points.begin(), points.end());
-                    quadrature_weights.insert(quadrature_weights.end(), weights.begin(), weights.end());
-                    normals.insert(normals.end(), quadrature.size(), normal);
-                }
-                else
-                {
-                    //possibly dg case here!
-                }
-            }
-        }
-        quad_surface = NonMatching::ImmersedSurfaceQuadrature<2>(quadrature_points, quadrature_weights, normals);
-        */
     }
 
     template <>
