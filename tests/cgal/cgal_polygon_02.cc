@@ -41,8 +41,9 @@ test_quadrilaterals()
   // only for meshes that have no holes
   // extension to CGAL::Polygon_with_holes possible
   names_and_args = {{"hyper_cube", "0.0 : 1.0 : false"},
-                    {"hyper_ball", "0.,0. : 1. : false"},
-                    {"hyper_L", "0.0 : 1.0 : false"}};
+                    {"hyper_ball_balanced", "0.,0. : 1. "},
+                    {"hyper_L", "0.0 : 1.0 : false"},
+                    {"simplex", "0.0, 0.0 ; 1.0 , 0.0 ; 0.0, 1.0"}};
 
 
   for (const auto &info_pair : names_and_args)

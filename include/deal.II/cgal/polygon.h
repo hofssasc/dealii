@@ -147,7 +147,7 @@ namespace CGALWrappers
       {
         CGAL::difference(polygon_1, polygon_2, std::back_inserter(polygon_out));
       }
-    else if ((boolean_operation == BooleanOperation::compute_union))
+    else if (boolean_operation == BooleanOperation::compute_union)
       {
         polygon_out.resize(1);
         CGAL::join(polygon_1, polygon_2, polygon_out[0]);
