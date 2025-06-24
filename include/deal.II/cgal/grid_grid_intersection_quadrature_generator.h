@@ -29,20 +29,20 @@
 #  include <deal.II/cgal/utilities.h>
 
 #  include <CGAL/Boolean_set_operations_2.h>
-#  include <CGAL/Delaunay_triangulation_2.h>
 #  include <CGAL/Constrained_Delaunay_triangulation_2.h>
+#  include <CGAL/Delaunay_triangulation_2.h>
+#  include <CGAL/Partition_traits_2.h>
 #  include <CGAL/Polygon_mesh_processing/clip.h>
 #  include <CGAL/Polygon_with_holes_2.h>
 #  include <CGAL/Side_of_triangle_mesh.h>
 #  include <CGAL/intersections.h>
 #  include <CGAL/partition_2.h>
-#  include <CGAL/Partition_traits_2.h>
-
 
 #  include "polygon.h"
 
 // output
 #  include <deal.II/base/timer.h>
+
 #  include <CGAL/IO/VTK.h>
 #  include <CGAL/IO/output_to_vtu.h>
 #  include <CGAL/boost/graph/IO/polygon_mesh_io.h>
@@ -62,7 +62,7 @@ namespace CGALWrappers
     using CGALTriangulation = CGAL::Triangulation_3<K>;
 
     // 2D
-    using Traits               = CGAL::Partition_traits_2<K>;
+    using Traits = CGAL::Partition_traits_2<K>;
 
     using CGALPoint2           = CGAL::Point_2<K>;
     using CGALPolygon          = CGAL::Polygon_2<K>;
@@ -113,7 +113,7 @@ namespace CGALWrappers
     Quadrature<dim - 1>
     get_inside_quadrature_dg_face(
       const typename Triangulation<dim>::cell_iterator &cell,
-      unsigned int face_index) const; //precomputed dg faces
+      unsigned int face_index) const; // precomputed dg faces
 
     NonMatching::LocationToLevelSet
     location_to_geometry(unsigned int cell_index) const;
@@ -132,14 +132,15 @@ namespace CGALWrappers
     CGALPolygon                   fitted_2D_mesh;
     CGAL::Surface_mesh<CGALPoint> fitted_surface_mesh;
 
-    Quadrature<dim>                               quad_cells;
-    NonMatching::ImmersedSurfaceQuadrature<dim>   quad_surface;
-    Quadrature<dim - 1>                           quad_dg_face;
-    std::map<unsigned int, std::vector<Quadrature<dim - 1>>> quad_dg_face_vec; //precomputed dg faces
-    std::vector<NonMatching::LocationToLevelSet>  location_to_geometry_vec;
+    Quadrature<dim>                             quad_cells;
+    NonMatching::ImmersedSurfaceQuadrature<dim> quad_surface;
+    Quadrature<dim - 1>                         quad_dg_face;
+    std::map<unsigned int, std::vector<Quadrature<dim - 1>>>
+      quad_dg_face_vec; // precomputed dg faces
+    std::vector<NonMatching::LocationToLevelSet> location_to_geometry_vec;
   };
 
-  
+
 
 } // namespace CGALWrappers
 
