@@ -62,7 +62,7 @@ test(unsigned int refinement_domain, unsigned int refinement_boundary)
     {"hyper_ball_balanced",
      "-0.1 ,1.0 ,0.0 : 0.5"}}; // only partially in domain
   // Notes: cell size of domain must be a order smaller than the size of the
-  // domain mesh because of calssify
+  // domain mesh because of classify
   //  this is in FEM always the case (but keep in mind that cells that contain a
   //  whole boundary mesh  or only have vertices on the edge of it will be
   //  classified as not cut -> change refinement to 1 to see effect)
