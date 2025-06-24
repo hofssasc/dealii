@@ -306,13 +306,12 @@ namespace CGALWrappers
              "Not a single polygon with holes, disconnected domain!!"));
 
     std::vector<std::array<dealii::Point<2>, 3>> vec_of_simplices;
-    for (size_t i = 0; i < polygon_out_vec.size(); i++)
+    for (const auto &polygon_out : polygon_out_vec)
       {
-        Assert(polygon_out_vec[i].outer_boundary().is_simple(),
+        Assert(polygon_out.outer_boundary().is_simple(),
                ExcMessage("The Polygon outer boundary is not simple"));
         // quadrature area in a cell cannot be a polygon with holes
-        Assert(!polygon_out_vec[i].has_holes(),
-               ExcMessage("The Polygon has holes"));
+        Assert(!polygon_out.has_holes(), ExcMessage("The Polygon has holes"));
 
         // partition polygon into convex polygons
         // these can be meshed as convex hull
@@ -320,8 +319,8 @@ namespace CGALWrappers
         Traits                       partition_traits;
         std::list<Traits::Polygon_2> convex_polygons;
         CGAL::optimal_convex_partition_2(
-          polygon_out_vec[i].outer_boundary().vertices_begin(),
-          polygon_out_vec[i].outer_boundary().vertices_end(),
+          polygon_out.outer_boundary().vertices_begin(),
+          polygon_out.outer_boundary().vertices_end(),
           std::back_inserter(convex_polygons),
           partition_traits);
 
@@ -364,10 +363,9 @@ namespace CGALWrappers
     std::vector<Point<2>>     quadrature_points;
     std::vector<double>       quadrature_weights;
     std::vector<Tensor<1, 2>> normals;
-    for (size_t i_poly = 0; i_poly < polygon_out_vec.size(); i_poly++)
+    for (const auto &polygon_out : polygon_out_vec)
       {
-        for (const auto &edge_cut :
-             polygon_out_vec[i_poly].outer_boundary().edges())
+        for (const auto &edge_cut : polygon_out.outer_boundary().edges())
           {
             unsigned int dg_face_index = cell->n_faces() + 1;
             auto         p_cut_1       = edge_cut.source();
@@ -638,10 +636,9 @@ namespace CGALWrappers
 
     std::vector<Point<1>> quadrature_points;
     std::vector<double>   quadrature_weights;
-    for (size_t i_poly = 0; i_poly < polygon_out_vec.size(); i_poly++)
+    for (const auto &polygon_out : polygon_out_vec)
       {
-        for (const auto &edge_cut :
-             polygon_out_vec[i_poly].outer_boundary().edges())
+        for (const auto &edge_cut : polygon_out.outer_boundary().edges())
           {
             bool dg_face = false;
             auto p_cut_1 = edge_cut.source();
