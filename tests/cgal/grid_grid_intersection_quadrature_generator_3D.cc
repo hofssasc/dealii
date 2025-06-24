@@ -21,7 +21,7 @@ using CGALPoint2  = CGAL::Point_2<K>;
 using CGALPolygon = CGAL::Polygon_2<K>;
 
 void
-test(unsigned int refinment_domain, unsigned int refinment_boundary)
+test(unsigned int refinement_domain, unsigned int refinement_boundary)
 {
   Triangulation<3, 3> tria_domain;
   Triangulation<3, 3> tria_boundary;
@@ -69,7 +69,7 @@ test(unsigned int refinment_domain, unsigned int refinment_boundary)
 
   // The cell to be cut
   GridGenerator::reference_cell(tria_domain, ReferenceCells::Hexahedron);
-  tria_domain.refine_global(refinment_domain);
+  tria_domain.refine_global(refinement_domain);
 
   for (const auto &info_pair : names_and_args)
     {
@@ -79,7 +79,7 @@ test(unsigned int refinment_domain, unsigned int refinment_boundary)
       GridGenerator::generate_from_name_and_arguments(tria_boundary,
                                                       name,
                                                       args);
-      tria_boundary.refine_global(refinment_boundary);
+      tria_boundary.refine_global(refinement_boundary);
 
       for (const auto &boolean_operation : boolean_operations)
         {

@@ -21,7 +21,7 @@ using CGALPoint2  = CGAL::Point_2<K>;
 using CGALPolygon = CGAL::Polygon_2<K>;
 
 void
-test(unsigned int refinment_domain, unsigned int refinment_boundary)
+test(unsigned int refinement_domain, unsigned int refinement_boundary)
 {
   Triangulation<2, 2> tria_domain;
   Triangulation<2, 2> tria_boundary;
@@ -30,7 +30,7 @@ test(unsigned int refinment_domain, unsigned int refinment_boundary)
   GridGridIntersectionQuadratureGenerator<2> ggi_quadrature_generator;
   MappingQ<2>                                mapping(1);
   unsigned int                               quadrature_degree = 2;
-  // const auto fintie_element = FE_Nothing<2>();
+
   const FE_Q<2, 2> finite_element(1); // or put FE::nothing
 
   std::vector<std::pair<std::string, std::string>> names_and_args;
@@ -57,14 +57,14 @@ test(unsigned int refinment_domain, unsigned int refinment_boundary)
     {"hyper_ball_balanced", "0.0,0.0 : 1.0"},    // centered circle
     {"hyper_ball_balanced", "-0.1 ,1.0 : 0.5"}}; // only partially in domain
   // Notes: cell size of domain must be a order smaller than the size of the
-  // domain mesh because of calssify
+  // domain mesh because of classify
   //  this is in FEM always the case (but keep in mind that cells that contain a
   //  whole boundary mesh  or only have vertices on the edge of it will be
   //  classified as not cut -> change refinement to 1 to see effect)
 
   // The cell to be cut
   GridGenerator::reference_cell(tria_domain, ReferenceCells::Quadrilateral);
-  tria_domain.refine_global(refinment_domain);
+  tria_domain.refine_global(refinement_domain);
 
   for (const auto &info_pair : names_and_args)
     {
@@ -74,7 +74,7 @@ test(unsigned int refinment_domain, unsigned int refinment_boundary)
       GridGenerator::generate_from_name_and_arguments(tria_boundary,
                                                       name,
                                                       args);
-      tria_boundary.refine_global(refinment_boundary);
+      tria_boundary.refine_global(refinement_boundary);
 
       for (const auto &boolean_operation : boolean_operations)
         {

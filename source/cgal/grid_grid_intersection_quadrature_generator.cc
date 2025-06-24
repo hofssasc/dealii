@@ -130,7 +130,7 @@ namespace CGALWrappers
 
   // The classification inside is only valid if no vertex is on the
   // boundary. Technically if one vertex is on the boundary the cell could still
-  // be completely inside but a conservatice approach is choosen.
+  // be completely inside but a conservatice approach is chosen.
   // Since we only check for edges we guess it might intersect.
   //-> in this case we will generate a volume integral over whole cell!
   template <>
@@ -211,7 +211,7 @@ namespace CGALWrappers
           }
         // Note: construction of case 1 and 3 make sure that if two vertices are
         // on the boundary the cell
-        // inside is considered cut and takes acount for the face integral. The
+        // inside is considered cut and takes account for the face integral. The
         // cell outside also has vertices on the boundary but is ignored
         // because then the boundary integral would be performed twice
       }
@@ -290,7 +290,7 @@ namespace CGALWrappers
     CGALPolygon polygon_cell;
     dealii_cell_to_cgal_polygon(cell, *mapping, polygon_cell);
 
-    // performe boolean operation on cell and fitted mesh
+    // perform boolean operation on cell and fitted mesh
     // result is a polygon with holes
     std::vector<CGALPolygonWithHoles> polygon_out_vec;
     compute_boolean_operation(polygon_cell,
@@ -299,7 +299,7 @@ namespace CGALWrappers
                               polygon_out_vec);
 
     // quadrature area in a cell could be split into two polygons
-    // occurence is not expected for smooth boundaries
+    // occurrence is not expected for smooth boundaries
     // -> outer for loop here for eventual extension
     Assert(polygon_out_vec.size() == 1,
            ExcMessage(
