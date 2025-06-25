@@ -31,14 +31,14 @@ if(DEAL_II_WITH_CGAL)
     ${_src}
     surface_mesh.cc
     intersections.cc
-    grid_grid_intersection_quadrature_generator.cc
+    polygon.cc
   )
 
   set(_inst
       ${_inst}
   surface_mesh.inst.in
   intersections.inst.in
-  grid_grid_intersection_quadrature_generator.inst.in
+  polygon.inst.in
   )
 endif()
 

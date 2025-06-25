@@ -17,20 +17,11 @@
 
 #include <deal.II/base/config.h>
 
-#include <deal.II/fe/mapping.h>
-
-#include <deal.II/grid/tria.h>
-
 #ifdef DEAL_II_WITH_CGAL
 #  include <deal.II/cgal/point_conversion.h>
-
-#  include <CGAL/Polygon_2.h>
-
-
-// only for compute boolean operation
 #  include <deal.II/cgal/utilities.h>
 
-#  include <CGAL/Boolean_set_operations_2.h>
+#  include <CGAL/Polygon_2.h>
 #  include <CGAL/Polygon_with_holes_2.h>
 
 
@@ -38,121 +29,76 @@ DEAL_II_NAMESPACE_OPEN
 
 namespace CGALWrappers
 {
-  using K = CGAL::Exact_predicates_exact_constructions_kernel;
-
-  using CGALPoint2           = CGAL::Point_2<K>;
-  using CGALPolygon          = CGAL::Polygon_2<K>;
-  using CGALPolygonWithHoles = CGAL::Polygon_with_holes_2<K>;
-
+  /**
+   * Build a CGAL::Polygon_2 from a deal.II cell.
+   *
+   * The class Polygon_2 is a wrapper around a container of points that can
+   * be used to represent polygons.
+   * The points must be added in counterclockwise order to a Polygon_2
+   *
+   * More information on this class is available at
+   * https://doc.cgal.org/latest/Polygon/index.html
+   *
+   * The functions are for two dimensional triangulations in two dimensional
+   * space. Projecting 3D points is possible with CGAL but not implemented.
+   *
+   * The generated boundary representation is useful when performing
+   * geometric operations using compute boolean operations.
+   *
+   * @param[in] cell The input deal.II cell iterator
+   * @param[in] mapping The mapping used to map the vertices of the cell
+   * @param[out] polygon The output CGAL::Polygon_2
+   */
+  template <typename KernelType>
   void
   dealii_cell_to_cgal_polygon(
     const typename Triangulation<2, 2>::cell_iterator &cell,
     const Mapping<2, 2>                               &mapping,
-    CGALPolygon                                       &polygon)
-  {
-    const auto &vertices = mapping.get_vertices(cell);
-    polygon.clear();
-    if (cell->reference_cell() == ReferenceCells::Triangle)
-      {
-        polygon.push_back(
-          CGALWrappers::dealii_point_to_cgal_point<CGALPoint2, 2>(vertices[0]));
-        polygon.push_back(
-          CGALWrappers::dealii_point_to_cgal_point<CGALPoint2, 2>(vertices[1]));
-        polygon.push_back(
-          CGALWrappers::dealii_point_to_cgal_point<CGALPoint2, 2>(vertices[2]));
-      }
-    else if (cell->reference_cell() == ReferenceCells::Quadrilateral)
-      {
-        polygon.push_back(
-          CGALWrappers::dealii_point_to_cgal_point<CGALPoint2, 2>(vertices[0]));
-        polygon.push_back(
-          CGALWrappers::dealii_point_to_cgal_point<CGALPoint2, 2>(vertices[1]));
-        polygon.push_back(
-          CGALWrappers::dealii_point_to_cgal_point<CGALPoint2, 2>(vertices[3]));
-        polygon.push_back(
-          CGALWrappers::dealii_point_to_cgal_point<CGALPoint2, 2>(vertices[2]));
-      }
-    else
-      {
-        DEAL_II_ASSERT_UNREACHABLE();
-      }
-  }
+    CGAL::Polygon_2<KernelType>                       &polygon);
 
 
 
+  /**
+   * Convert a deal.II triangulation to a CGAL::Polygon_2.
+   *
+   * Triangulations that have holes are not supported. The output
+   * is a Polygon_2, the function would need to be extended.
+   *
+   * @param[in] tria The input deal.II triangulation
+   * @param[out] polygon The output CGAL::Polygon_2
+   */
+  template <typename KernelType>
   void
-  dealii_tria_to_cgal_polygon(const Triangulation<2, 2> &tria,
-                              CGALPolygon               &fitted_2D_mesh)
-  {
-    std::map<unsigned int, unsigned int> face_vertex_indices;
-
-    for (const auto &cell : tria.active_cell_iterators())
-      {
-        for (const unsigned int i : cell->face_indices())
-          {
-            const typename Triangulation<2, 2>::face_iterator &face =
-              cell->face(i);
-            if (face->at_boundary())
-              {
-                if (cell->reference_cell() == ReferenceCells::Quadrilateral &&
-                    (i == 0 || i == 3))
-                  {
-                    face_vertex_indices[face->vertex_index(1)] =
-                      face->vertex_index(0);
-                  }
-                else
-                  {
-                    face_vertex_indices[face->vertex_index(0)] =
-                      face->vertex_index(1);
-                  }
-              }
-          }
-      }
-
-    const auto &vertices = tria.get_vertices();
-    fitted_2D_mesh.clear();
-
-    unsigned int current_index = face_vertex_indices.begin()->first;
-
-    for (size_t i = face_vertex_indices.size(); i > 0; --i)
-      {
-        fitted_2D_mesh.push_back(
-          dealii_point_to_cgal_point<CGALPoint2, 2>(vertices[current_index]));
-        auto it       = face_vertex_indices.find(current_index);
-        current_index = it->second;
-        face_vertex_indices.erase(it);
-      }
-  }
+  dealii_tria_to_cgal_polygon(const Triangulation<2, 2>   &tria,
+                              CGAL::Polygon_2<KernelType> &polygon);
 
 
 
+  /**
+   * Perform a BooleanOperation on two CGAL::Polygon_2.
+   *
+   * The output is a vector of CGAL::Polygon_2_with_holes, since this
+   * can generally be the result of a boolean operation.
+   *
+   * For the union the vector will always have length one.
+   *
+   * For the difference operation the second polygon is subtracted
+   * from the first one.
+   *
+   * Corefinement is not supported as boolean operation.
+   *
+   * @param[in] polygon_1 The first input CGAL::Polygon_2
+   * @param[in] polygon_2 The second input CGAL::Polygon_2
+   * @param[in] boolean_operation The input BooleanOperation
+   * @param[out] polygon_out The output CGAL::Polygon_2_with_holes
+   */
+  template <typename KernelType>
   void
-  compute_boolean_operation(const CGALPolygon      &polygon_1,
-                            const CGALPolygon      &polygon_2,
-                            const BooleanOperation &boolean_operation,
-                            std::vector<CGALPolygonWithHoles> &polygon_out)
-  {
-    Assert(!(boolean_operation == BooleanOperation::compute_corefinement),
-           ExcMessage("Corefinement no usecase for 2D polygons"));
-
-    polygon_out.clear();
-
-    if (boolean_operation == BooleanOperation::compute_intersection)
-      {
-        CGAL::intersection(polygon_1,
-                           polygon_2,
-                           std::back_inserter(polygon_out));
-      }
-    else if (boolean_operation == BooleanOperation::compute_difference)
-      {
-        CGAL::difference(polygon_1, polygon_2, std::back_inserter(polygon_out));
-      }
-    else if ((boolean_operation == BooleanOperation::compute_union))
-      {
-        polygon_out.resize(1);
-        CGAL::join(polygon_1, polygon_2, polygon_out[0]);
-      }
-  }
+  compute_boolean_operation(
+    const CGAL::Polygon_2<KernelType>                   &polygon_1,
+    const CGAL::Polygon_2<KernelType>                   &polygon_2,
+    const BooleanOperation                              &boolean_operation,
+    std::vector<CGAL::Polygon_with_holes_2<KernelType>> &polygon_out);
 } // namespace CGALWrappers
 
 DEAL_II_NAMESPACE_CLOSE
