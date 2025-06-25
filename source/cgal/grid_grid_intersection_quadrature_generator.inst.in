@@ -37,14 +37,14 @@ for (dim : SPACE_DIMENSIONS)
 
     template GridGridIntersectionQuadratureGenerator<dim>::
       GridGridIntersectionQuadratureGenerator(
-        const MappingQ<dim> &mapping_in,
-        unsigned int         quadrature_order_in,
-        BooleanOperation     boolean_operation_in);
+        const Mapping<dim> &mapping_in,
+        unsigned int        quadrature_order_in,
+        BooleanOperation    boolean_operation_in);
 
     template void GridGridIntersectionQuadratureGenerator<dim>::reinit(
-      const MappingQ<dim> &mapping_in,
-      unsigned int         quadrature_order_in,
-      BooleanOperation     boolean_operation_in);
+      const Mapping<dim> &mapping_in,
+      unsigned int        quadrature_order_in,
+      BooleanOperation    boolean_operation_in);
 
     template NonMatching::ImmersedSurfaceQuadrature<dim>
     GridGridIntersectionQuadratureGenerator<dim>::get_surface_quadrature()

@@ -38,9 +38,9 @@ namespace CGALWrappers
   template <int dim>
   GridGridIntersectionQuadratureGenerator<dim>::
     GridGridIntersectionQuadratureGenerator(
-      const MappingQ<dim> &mapping_in,
-      unsigned int         quadrature_order_in,
-      BooleanOperation     boolean_operation_in)
+      const Mapping<dim> &mapping_in,
+      unsigned int        quadrature_order_in,
+      BooleanOperation    boolean_operation_in)
     : mapping(&mapping_in)
     , quadrature_order(quadrature_order_in)
     , boolean_operation(boolean_operation_in)
@@ -57,9 +57,9 @@ namespace CGALWrappers
   template <int dim>
   void
   GridGridIntersectionQuadratureGenerator<dim>::reinit(
-    const MappingQ<dim> &mapping_in,
-    unsigned int         quadrature_order_in,
-    BooleanOperation     boolean_operation_in)
+    const Mapping<dim> &mapping_in,
+    unsigned int        quadrature_order_in,
+    BooleanOperation    boolean_operation_in)
   {
     mapping           = &mapping_in;
     quadrature_order  = quadrature_order_in;

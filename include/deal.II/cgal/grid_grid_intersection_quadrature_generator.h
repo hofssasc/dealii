@@ -19,7 +19,7 @@
 
 #include <deal.II/distributed/tria.h>
 
-#include <deal.II/fe/mapping_q.h> //think of this and mapping header
+#include <deal.II/fe/mapping.h> //think of this and mapping header
 
 #include <deal.II/non_matching/immersed_surface_quadrature.h>
 #include <deal.II/non_matching/mesh_classifier.h>
@@ -74,14 +74,14 @@ namespace CGALWrappers
     GridGridIntersectionQuadratureGenerator();
 
     GridGridIntersectionQuadratureGenerator(
-      const MappingQ<dim> &mapping_in,
-      unsigned int         quadrature_order_in,
-      BooleanOperation     boolean_operation_in);
+      const Mapping<dim> &mapping_in,
+      unsigned int        quadrature_order_in,
+      BooleanOperation    boolean_operation_in);
 
     void
-    reinit(const MappingQ<dim> &mapping_in,
-           unsigned int         quadrature_order_in,
-           BooleanOperation     boolean_operation_in);
+    reinit(const Mapping<dim> &mapping_in,
+           unsigned int        quadrature_order_in,
+           BooleanOperation    boolean_operation_in);
 
     void
     clear();
@@ -125,9 +125,9 @@ namespace CGALWrappers
     output_fitted_mesh() const;
 
   private:
-    const MappingQ<dim> *mapping;
-    unsigned int         quadrature_order;
-    BooleanOperation     boolean_operation;
+    const Mapping<dim> *mapping;
+    unsigned int        quadrature_order;
+    BooleanOperation    boolean_operation;
 
     CGALPolygon                   fitted_2D_mesh;
     CGAL::Surface_mesh<CGALPoint> fitted_surface_mesh;
