@@ -75,13 +75,16 @@ namespace CGALWrappers
 
     GridGridIntersectionQuadratureGenerator(
       const Mapping<dim> &mapping_in,
-      unsigned int        quadrature_order_in,
+      unsigned int        n_quadrature_points_1D_in,
       BooleanOperation    boolean_operation_in);
 
     void
     reinit(const Mapping<dim> &mapping_in,
-           unsigned int        quadrature_order_in,
+           unsigned int        n_quadrature_points_1D_in,
            BooleanOperation    boolean_operation_in);
+           
+    void
+    set_n_quadrature_points_1D(unsigned int n_quadrature_points_1D_in);
 
     void
     clear();
@@ -126,7 +129,7 @@ namespace CGALWrappers
 
   private:
     const Mapping<dim> *mapping;
-    unsigned int        quadrature_order;
+    unsigned int        n_quadrature_points_1D;
     BooleanOperation    boolean_operation;
 
     CGALPolygon                   fitted_2D_mesh;
@@ -137,7 +140,8 @@ namespace CGALWrappers
     Quadrature<dim - 1>                         quad_dg_face;
     std::map<unsigned int, std::vector<Quadrature<dim - 1>>>
       quad_dg_face_vec; // precomputed dg faces
-    std::vector<NonMatching::LocationToLevelSet> location_to_geometry_vec;
+    std::vector<NonMatching::LocationToLevelSet> cell_locations;
+    std::vector<NonMatching::LocationToLevelSet> face_locations;
   };
 
 

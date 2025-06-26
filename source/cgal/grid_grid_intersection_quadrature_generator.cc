@@ -26,7 +26,7 @@ namespace CGALWrappers
   GridGridIntersectionQuadratureGenerator<
     dim>::GridGridIntersectionQuadratureGenerator()
     : mapping(nullptr)
-    , quadrature_order(0)
+    , n_quadrature_points_1D(0)
     , boolean_operation(BooleanOperation::compute_intersection)
   {
     Assert(
@@ -39,10 +39,10 @@ namespace CGALWrappers
   GridGridIntersectionQuadratureGenerator<dim>::
     GridGridIntersectionQuadratureGenerator(
       const Mapping<dim> &mapping_in,
-      unsigned int        quadrature_order_in,
+      unsigned int        n_quadrature_points_1D_in,
       BooleanOperation    boolean_operation_in)
     : mapping(&mapping_in)
-    , quadrature_order(quadrature_order_in)
+    , n_quadrature_points_1D(n_quadrature_points_1D_in)
     , boolean_operation(boolean_operation_in)
   {
     Assert(
@@ -58,15 +58,23 @@ namespace CGALWrappers
   void
   GridGridIntersectionQuadratureGenerator<dim>::reinit(
     const Mapping<dim> &mapping_in,
-    unsigned int        quadrature_order_in,
+    unsigned int        n_quadrature_points_1D_in,
     BooleanOperation    boolean_operation_in)
   {
     mapping           = &mapping_in;
-    quadrature_order  = quadrature_order_in;
+    n_quadrature_points_1D  = n_quadrature_points_1D_in;
     boolean_operation = boolean_operation_in;
     Assert(boolean_operation_in == BooleanOperation::compute_intersection ||
              boolean_operation_in == BooleanOperation::compute_difference,
            ExcMessage("Union and corerefinement not implemented"));
+  }
+
+  template <int dim>
+  void
+  GridGridIntersectionQuadratureGenerator<dim>::
+  set_n_quadrature_points_1D(unsigned int n_quadrature_points_1D_in)
+  {
+    n_quadrature_points_1D = n_quadrature_points_1D_in;
   }
 
   template <>
@@ -75,7 +83,7 @@ namespace CGALWrappers
   {
     quad_cells   = Quadrature<2>();
     quad_surface = NonMatching::ImmersedSurfaceQuadrature<2>();
-    location_to_geometry_vec.clear();
+    cell_locations.clear();
     fitted_surface_mesh.clear();
     fitted_2D_mesh.clear();
     quad_dg_face_vec.clear();
@@ -87,7 +95,7 @@ namespace CGALWrappers
   {
     quad_cells   = Quadrature<3>();
     quad_surface = NonMatching::ImmersedSurfaceQuadrature<3>();
-    location_to_geometry_vec.clear();
+    cell_locations.clear();
     fitted_surface_mesh.clear();
     fitted_2D_mesh.clear();
     quad_dg_face_vec.clear();
@@ -140,8 +148,8 @@ namespace CGALWrappers
     const TriangulationType &tria_unfitted)
   {
     quad_dg_face_vec.clear(); // move somewhere else!!
-    location_to_geometry_vec.clear();
-    location_to_geometry_vec.resize(tria_unfitted.n_active_cells());
+    cell_locations.assign(tria_unfitted.n_active_cells(), 
+                      NonMatching::LocationToLevelSet::unassigned);
 
     CGAL::Bounded_side inside_domain;
     if (boolean_operation == BooleanOperation::compute_intersection)
@@ -191,7 +199,7 @@ namespace CGALWrappers
         if (inside_count == 0) // case 1: all vertices outside or on boundary:
                                // not considered (outside)
           {
-            location_to_geometry_vec[cell->active_cell_index()] =
+            cell_locations[cell->active_cell_index()] =
               NonMatching::LocationToLevelSet::outside;
             // Assert(!CGAL::do_intersect(fitted_2D_mesh, polygon_cell),
             // ExcMessage("cell classified as outside although intersected"));
@@ -200,13 +208,13 @@ namespace CGALWrappers
                  2 * cell->n_vertices()) // case 2: all vertices inside:
                                          // considered (inside)
           {
-            location_to_geometry_vec[cell->active_cell_index()] =
+            cell_locations[cell->active_cell_index()] =
               NonMatching::LocationToLevelSet::inside;
           }
         else // case 3: at least one vertex inside and at least one on boundary
              // or outside
           {
-            location_to_geometry_vec[cell->active_cell_index()] =
+            cell_locations[cell->active_cell_index()] =
               NonMatching::LocationToLevelSet::intersected;
           }
         // Note: construction of case 1 and 3 make sure that if two vertices are
@@ -223,8 +231,8 @@ namespace CGALWrappers
   GridGridIntersectionQuadratureGenerator<3>::reclassify(
     const TriangulationType &tria_unfitted)
   {
-    location_to_geometry_vec.clear();
-    location_to_geometry_vec.resize(tria_unfitted.n_active_cells());
+    cell_locations.assign(tria_unfitted.n_active_cells(), 
+            NonMatching::LocationToLevelSet::unassigned);
 
     CGAL::Side_of_triangle_mesh<CGAL::Surface_mesh<CGALPoint>, K> inside_test(
       fitted_surface_mesh);
@@ -265,17 +273,17 @@ namespace CGALWrappers
 
         if (inside_count == 0)
           {
-            location_to_geometry_vec[cell->active_cell_index()] =
+            cell_locations[cell->active_cell_index()] =
               NonMatching::LocationToLevelSet::outside;
           }
         else if (inside_count == cell->n_vertices() + cell->n_faces())
           {
-            location_to_geometry_vec[cell->active_cell_index()] =
+            cell_locations[cell->active_cell_index()] =
               NonMatching::LocationToLevelSet::inside;
           }
         else
           {
-            location_to_geometry_vec[cell->active_cell_index()] =
+            cell_locations[cell->active_cell_index()] =
               NonMatching::LocationToLevelSet::intersected;
           }
       }
@@ -354,7 +362,7 @@ namespace CGALWrappers
           }
       }
     quad_cells =
-      QGaussSimplex<2>(quadrature_order).mapped_quadrature(vec_of_simplices);
+      QGaussSimplex<2>(n_quadrature_points_1D).mapped_quadrature(vec_of_simplices);
 
     // surface quadrature
     std::vector<Quadrature<1>> quadrature_dg_faces_cell;
@@ -404,7 +412,7 @@ namespace CGALWrappers
                   unit_segment);
 
                 auto quadrature =
-                  QGaussSimplex<1>(quadrature_order)
+                  QGaussSimplex<1>(n_quadrature_points_1D)
                     .compute_affine_transformation(unit_segment);
                 auto points  = quadrature.get_points();
                 auto weights = quadrature.get_weights();
@@ -449,7 +457,7 @@ namespace CGALWrappers
                 // mapping->project_real_point_to_unit_point_on_face( cell,
                 // face_index, cgal_point_to_dealii_point<2>(p_cut_2));
 
-                // Quadrature<1> quadrature = QGaussSimplex<1>(quadrature_order)
+                // Quadrature<1> quadrature = QGaussSimplex<1>(n_quadrature_points_1D)
                 //                        .compute_affine_transformation({{p_unit_1,
                 //                                                       p_unit_2}});
 
@@ -514,7 +522,7 @@ namespace CGALWrappers
         vec_of_simplices.push_back(unit_simplex);
       }
     quad_cells =
-      QGaussSimplex<3>(quadrature_order).mapped_quadrature(vec_of_simplices);
+      QGaussSimplex<3>(n_quadrature_points_1D).mapped_quadrature(vec_of_simplices);
 
     // surface quadrature
     std::vector<Point<3>>     quadrature_points;
@@ -583,7 +591,7 @@ namespace CGALWrappers
                 cgal_point_to_dealii_point<3>(simplex[1]),
                 cgal_point_to_dealii_point<3>(simplex[2])}},
               unit_simplex);
-            auto quadrature = QGaussSimplex<2>(quadrature_order)
+            auto quadrature = QGaussSimplex<2>(n_quadrature_points_1D)
                                 .compute_affine_transformation(unit_simplex);
             auto points  = quadrature.get_points();
             auto weights = quadrature.get_weights();
@@ -665,7 +673,7 @@ namespace CGALWrappers
                     cell, face_index, cgal_point_to_dealii_point<2>(p_cut_2));
 
                 Quadrature<1> quadrature =
-                  QGaussSimplex<1>(quadrature_order)
+                  QGaussSimplex<1>(n_quadrature_points_1D)
                     .compute_affine_transformation({{p_unit_1, p_unit_2}});
 
                 auto points  = quadrature.get_points();
@@ -754,7 +762,7 @@ namespace CGALWrappers
                 i += 1;
               }
 
-            auto quadrature = QGaussSimplex<2>(quadrature_order)
+            auto quadrature = QGaussSimplex<2>(n_quadrature_points_1D)
                                 .compute_affine_transformation(simplex);
 
             auto points  = quadrature.get_points();
@@ -814,7 +822,7 @@ namespace CGALWrappers
   GridGridIntersectionQuadratureGenerator<dim>::location_to_geometry(
     unsigned int cell_index) const
   {
-    return location_to_geometry_vec[cell_index];
+    return cell_locations[cell_index];
   }
 
   template <int dim>
@@ -822,7 +830,7 @@ namespace CGALWrappers
   GridGridIntersectionQuadratureGenerator<dim>::location_to_geometry(
     const typename Triangulation<dim>::cell_iterator &cell) const
   {
-    return location_to_geometry_vec[cell->active_cell_index()];
+    return cell_locations[cell->active_cell_index()];
   }
 
   template <>
