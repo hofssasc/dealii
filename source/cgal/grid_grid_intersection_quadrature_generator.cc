@@ -42,7 +42,7 @@ namespace CGALWrappers
       const Mapping<dim> &mapping_in,
       unsigned int        n_quadrature_points_1D_in,
       BooleanOperation    boolean_operation_in,
-      bool precompute_dg_faces_in)
+      bool                precompute_dg_faces_in)
     : mapping(&mapping_in)
     , n_quadrature_points_1D(n_quadrature_points_1D_in)
     , boolean_operation(boolean_operation_in)
@@ -63,12 +63,12 @@ namespace CGALWrappers
     const Mapping<dim> &mapping_in,
     unsigned int        n_quadrature_points_1D_in,
     BooleanOperation    boolean_operation_in,
-    bool precompute_dg_faces_in)
+    bool                precompute_dg_faces_in)
   {
-    mapping           = &mapping_in;
-    n_quadrature_points_1D  = n_quadrature_points_1D_in;
-    boolean_operation = boolean_operation_in;
-    precompute_dg_faces = precompute_dg_faces_in;
+    mapping                = &mapping_in;
+    n_quadrature_points_1D = n_quadrature_points_1D_in;
+    boolean_operation      = boolean_operation_in;
+    precompute_dg_faces    = precompute_dg_faces_in;
     Assert(boolean_operation_in == BooleanOperation::compute_intersection ||
              boolean_operation_in == BooleanOperation::compute_difference,
            ExcMessage("Union and corerefinement not implemented"));
@@ -76,8 +76,8 @@ namespace CGALWrappers
 
   template <int dim>
   void
-  GridGridIntersectionQuadratureGenerator<dim>::
-  set_n_quadrature_points_1D(unsigned int n_quadrature_points_1D_in)
+  GridGridIntersectionQuadratureGenerator<dim>::set_n_quadrature_points_1D(
+    unsigned int n_quadrature_points_1D_in)
   {
     n_quadrature_points_1D = n_quadrature_points_1D_in;
   }
@@ -139,20 +139,18 @@ namespace CGALWrappers
            ExcMessage("The CGAL mesh is not valid"));
     Assert(CGAL::is_closed(surface_mesh_3D),
            ExcMessage("The CGAL mesh is not closed"));
-    Assert(CGAL::Polygon_mesh_processing::is_outward_oriented(
-             surface_mesh_3D),
+    Assert(CGAL::Polygon_mesh_processing::is_outward_oriented(surface_mesh_3D),
            ExcMessage(
              "The normal vectors of the CGAL mesh are not oriented outwards"));
   }
 
   template <>
   CGAL::Bounded_side
-  GridGridIntersectionQuadratureGenerator<2>::
-    side_of_surface_mesh(const Point<2> & point) const
+  GridGridIntersectionQuadratureGenerator<2>::side_of_surface_mesh(
+    const Point<2> &point) const
   {
-    auto cgal_point = 
-          dealii_point_to_cgal_point<CGALPoint2, 2>(point);
-    
+    auto cgal_point = dealii_point_to_cgal_point<CGALPoint2, 2>(point);
+
     return CGAL::bounded_side_2(surface_mesh_2D.begin(),
                                 surface_mesh_2D.end(),
                                 cgal_point);
@@ -160,8 +158,8 @@ namespace CGALWrappers
 
   template <>
   CGAL::Bounded_side
-  GridGridIntersectionQuadratureGenerator<3>::
-    side_of_surface_mesh(const Point<3> & point) const
+  GridGridIntersectionQuadratureGenerator<3>::side_of_surface_mesh(
+    const Point<3> &point) const
   {
     auto cgal_point = dealii_point_to_cgal_point<CGALPoint, 3>(point);
     return (*side_of_surface_mesh_3D)(cgal_point);
@@ -179,10 +177,10 @@ namespace CGALWrappers
     const TriangulationType &tria_unfitted)
   {
     quad_dg_face_vec.clear(); // move somewhere else!!
-    cell_locations.assign(tria_unfitted.n_active_cells(), 
-                      NonMatching::LocationToLevelSet::unassigned);
+    cell_locations.assign(tria_unfitted.n_active_cells(),
+                          NonMatching::LocationToLevelSet::unassigned);
     face_locations.assign(tria_unfitted.n_raw_faces(),
-                      NonMatching::LocationToLevelSet::unassigned);
+                          NonMatching::LocationToLevelSet::unassigned);
 
     CGAL::Bounded_side inside_domain;
     if (boolean_operation == BooleanOperation::compute_intersection)
@@ -199,16 +197,16 @@ namespace CGALWrappers
       }
 
     const auto &all_vertices = tria_unfitted.get_vertices();
-    const auto &used_flags = tria_unfitted.get_used_vertices();
+    const auto &used_flags   = tria_unfitted.get_used_vertices();
     std::vector<CGAL::Bounded_side> vertex_locations(all_vertices.size(),
                                                      CGAL::ON_BOUNDARY);
-    for(size_t i = 0; i < all_vertices.size(); i++)
-    {
-      if(used_flags[i])
+    for (size_t i = 0; i < all_vertices.size(); i++)
       {
-        vertex_locations[i] = side_of_surface_mesh(all_vertices[i]);
+        if (used_flags[i])
+          {
+            vertex_locations[i] = side_of_surface_mesh(all_vertices[i]);
+          }
       }
-    }
 
     // now find out if inside or not
     for (const auto &cell : tria_unfitted.active_cell_iterators())
@@ -217,16 +215,15 @@ namespace CGALWrappers
           continue;
 
         unsigned int inside_count = 0;
-        unsigned int total_count = 0;
+        unsigned int total_count  = 0;
         for (size_t f = 0; f < cell->n_faces(); f++)
           {
-            unsigned int inside_count_face = 0;
+            unsigned int inside_count_face   = 0;
             unsigned int boundary_count_face = 0;
             total_count += cell->face(f)->n_vertices() + 1;
 
             // test center of face
-            auto result = side_of_surface_mesh(
-              cell->face(f)->center());
+            auto result = side_of_surface_mesh(cell->face(f)->center());
 
             bool center_is_inside = (result == inside_domain);
 
@@ -235,7 +232,7 @@ namespace CGALWrappers
             boundary_count_face += (result == CGAL::ON_BOUNDARY);
 
             // test vertices of face
-            for(size_t v=0; v < cell->face(f)->n_vertices(); v++)
+            for (size_t v = 0; v < cell->face(f)->n_vertices(); v++)
               {
                 bool v_is_inside =
                   (vertex_locations[cell->face(f)->vertex_index(v)] ==
@@ -247,7 +244,8 @@ namespace CGALWrappers
                    CGAL::ON_BOUNDARY);
               }
 
-            if (inside_count_face == 0 && boundary_count_face != cell->n_faces() + 1)
+            if (inside_count_face == 0 &&
+                boundary_count_face != cell->n_faces() + 1)
               {
                 face_locations[cell->face(f)->index()] =
                   NonMatching::LocationToLevelSet::outside;
@@ -261,9 +259,9 @@ namespace CGALWrappers
               {
                 face_locations[cell->face(f)->index()] =
                   NonMatching::LocationToLevelSet::intersected;
-              } 
+              }
           }
-        
+
         if (inside_count == 0) // case 1: all vertices outside or on boundary:
                                // not considered (outside)
           {
@@ -272,9 +270,8 @@ namespace CGALWrappers
             // Assert(!CGAL::do_intersect(surface_mesh_2D, polygon_cell),
             // ExcMessage("cell classified as outside although intersected"));
           }
-        else if (inside_count ==
-                 total_count) // case 2: all vertices inside:
-                                         // considered (inside)
+        else if (inside_count == total_count) // case 2: all vertices inside:
+                                              // considered (inside)
           {
             cell_locations[cell->active_cell_index()] =
               NonMatching::LocationToLevelSet::inside;
@@ -291,10 +288,10 @@ namespace CGALWrappers
         // cell outside also has vertices on the boundary but is ignored
         // because then the boundary integral would be performed twice
       }
-      // maybe not appropriate here, should do a destructor
-      // but destruct shared pointer before surface_mesh_3D!!
-      // without this line-> error in destructor (i think because of that)
-      side_of_surface_mesh_3D.reset();
+    // maybe not appropriate here, should do a destructor
+    // but destruct shared pointer before surface_mesh_3D!!
+    // without this line-> error in destructor (i think because of that)
+    side_of_surface_mesh_3D.reset();
   }
 
   template <>
@@ -369,13 +366,13 @@ namespace CGALWrappers
             tria.clear();
           }
       }
-    quad_cells =
-      QGaussSimplex<2>(n_quadrature_points_1D).mapped_quadrature(vec_of_simplices);
+    quad_cells = QGaussSimplex<2>(n_quadrature_points_1D)
+                   .mapped_quadrature(vec_of_simplices);
 
     // surface quadrature
     std::vector<std::vector<Point<1>>> dg_quadrature_points;
-    std::vector<std::vector<double>> dg_quadrature_weights;
-    if(precompute_dg_faces)
+    std::vector<std::vector<double>>   dg_quadrature_weights;
+    if (precompute_dg_faces)
       {
         dg_quadrature_points.resize(cell->n_faces());
         dg_quadrature_weights.resize(cell->n_faces());
@@ -460,30 +457,35 @@ namespace CGALWrappers
                                           weights.end());
                 normals.insert(normals.end(), quadrature.size(), normal);
               }
-            else if (precompute_dg_faces) // change to true if want to use precomputed dg
+            else if (precompute_dg_faces) // change to true if want to use
+                                          // precomputed dg
               {
                 auto p_unit_1 =
-                mapping->project_real_point_to_unit_point_on_face( cell,
-                dg_face_index, cgal_point_to_dealii_point<2>(p_cut_1));
+                  mapping->project_real_point_to_unit_point_on_face(
+                    cell,
+                    dg_face_index,
+                    cgal_point_to_dealii_point<2>(p_cut_1));
 
                 auto p_unit_2 =
-                mapping->project_real_point_to_unit_point_on_face( cell,
-                dg_face_index, cgal_point_to_dealii_point<2>(p_cut_2));
+                  mapping->project_real_point_to_unit_point_on_face(
+                    cell,
+                    dg_face_index,
+                    cgal_point_to_dealii_point<2>(p_cut_2));
 
-                Quadrature<1> quadrature = QGaussSimplex<1>(n_quadrature_points_1D)
-                                       .compute_affine_transformation({{p_unit_1,
-                                                                      p_unit_2}});
+                Quadrature<1> quadrature =
+                  QGaussSimplex<1>(n_quadrature_points_1D)
+                    .compute_affine_transformation({{p_unit_1, p_unit_2}});
 
                 auto points  = quadrature.get_points();
                 auto weights = quadrature.get_weights();
                 dg_quadrature_points[dg_face_index].insert(
-                            dg_quadrature_points[dg_face_index].end(),
-                            points.begin(),
-                            points.end());
+                  dg_quadrature_points[dg_face_index].end(),
+                  points.begin(),
+                  points.end());
                 dg_quadrature_weights[dg_face_index].insert(
-                            dg_quadrature_weights[dg_face_index].end(),
-                            weights.begin(),
-                            weights.end());
+                  dg_quadrature_weights[dg_face_index].end(),
+                  weights.begin(),
+                  weights.end());
               }
           }
       }
@@ -491,14 +493,14 @@ namespace CGALWrappers
                                                              quadrature_weights,
                                                              normals);
 
-    if(precompute_dg_faces)
-    {
-      for (const unsigned int i : cell->face_indices())
-        {
-          quad_dg_face_vec[i] = Quadrature<1>(dg_quadrature_points[i], dg_quadrature_weights[i]);
-        }
-    }                                                      
-
+    if (precompute_dg_faces)
+      {
+        for (const unsigned int i : cell->face_indices())
+          {
+            quad_dg_face_vec[i] =
+              Quadrature<1>(dg_quadrature_points[i], dg_quadrature_weights[i]);
+          }
+      }
   }
 
   template <>
@@ -550,8 +552,8 @@ namespace CGALWrappers
                                                     unit_simplex);
         vec_of_simplices.push_back(unit_simplex);
       }
-    quad_cells =
-      QGaussSimplex<3>(n_quadrature_points_1D).mapped_quadrature(vec_of_simplices);
+    quad_cells = QGaussSimplex<3>(n_quadrature_points_1D)
+                   .mapped_quadrature(vec_of_simplices);
 
     // surface quadrature
     std::vector<Point<3>>     quadrature_points;
@@ -639,9 +641,9 @@ namespace CGALWrappers
             normal /= normal.norm();
             normals.insert(normals.end(), quadrature.size(), normal);
           }
-        else if (precompute_dg_faces) // change to true if want to use precomputed dg
+        else if (precompute_dg_faces) // change to true if want to use
+                                      // precomputed dg
           {
-
           }
       }
     quad_surface = NonMatching::ImmersedSurfaceQuadrature<3>(quadrature_points,
@@ -836,7 +838,7 @@ namespace CGALWrappers
   template <int dim>
   Quadrature<dim - 1>
   GridGridIntersectionQuadratureGenerator<dim>::get_inside_quadrature_dg_face(
-    unsigned int                                      face_index) const
+    unsigned int face_index) const
   {
     return quad_dg_face_vec.at(face_index);
   }
@@ -860,10 +862,11 @@ namespace CGALWrappers
   template <int dim>
   NonMatching::LocationToLevelSet
   GridGridIntersectionQuadratureGenerator<dim>::location_to_geometry(
-    const typename Triangulation<dim>::cell_iterator &cell, unsigned int face_index) const
-    {
-      return face_locations.at(cell->face(face_index)->index());
-    }
+    const typename Triangulation<dim>::cell_iterator &cell,
+    unsigned int                                      face_index) const
+  {
+    return face_locations.at(cell->face(face_index)->index());
+  }
 
   template <>
   void
@@ -952,8 +955,7 @@ namespace CGALWrappers
   void
   GridGridIntersectionQuadratureGenerator<3>::output_fitted_mesh() const
   {
-    CGAL::IO::write_polygon_mesh("surface_mesh_3D.stl",
-                                 surface_mesh_3D);
+    CGAL::IO::write_polygon_mesh("surface_mesh_3D.stl", surface_mesh_3D);
   }
 
 
