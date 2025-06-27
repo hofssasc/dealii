@@ -26,6 +26,10 @@ for (dim : SPACE_DIMENSIONS)
     GridGridIntersectionQuadratureGenerator<dim>::setup_domain_boundary(
       const Triangulation<dim> &tria_fitted_in);
 
+    template CGAL::Bounded_side
+    GridGridIntersectionQuadratureGenerator<dim>::
+      side_of_surface_mesh(const Point<dim> & point) const;
+
     template void GridGridIntersectionQuadratureGenerator<dim>::reclassify(
       const parallel::distributed::Triangulation<dim> &tria_unfitted);
 
@@ -39,12 +43,14 @@ for (dim : SPACE_DIMENSIONS)
       GridGridIntersectionQuadratureGenerator(
         const Mapping<dim> &mapping_in,
         unsigned int        n_quadrature_points_1D_in,
-        BooleanOperation    boolean_operation_in);
+        BooleanOperation    boolean_operation_in,
+        bool precompute_dg_faces_in = false);
 
     template void GridGridIntersectionQuadratureGenerator<dim>::reinit(
       const Mapping<dim> &mapping_in,
       unsigned int        n_quadrature_points_1D_in,
-      BooleanOperation    boolean_operation_in);
+      BooleanOperation    boolean_operation_in,
+      bool precompute_dg_faces_in = false);
 
     template void GridGridIntersectionQuadratureGenerator<dim>::
       set_n_quadrature_points_1D(unsigned int n_quadrature_points_1D_in);
@@ -61,7 +67,6 @@ for (dim : SPACE_DIMENSIONS)
 
     template Quadrature<dim - 1>
     GridGridIntersectionQuadratureGenerator<dim>::get_inside_quadrature_dg_face(
-      const typename Triangulation<dim>::cell_iterator &cell,
       unsigned int                                      face_index) const;
 
     template NonMatching::LocationToLevelSet
@@ -71,6 +76,11 @@ for (dim : SPACE_DIMENSIONS)
     template NonMatching::LocationToLevelSet
     GridGridIntersectionQuadratureGenerator<dim>::location_to_geometry(
       const typename Triangulation<dim>::cell_iterator &cell) const;
+
+    template NonMatching::LocationToLevelSet
+    GridGridIntersectionQuadratureGenerator<dim>::location_to_geometry(
+      const typename Triangulation<dim>::cell_iterator &cell,
+      unsigned int face_index) const;
 
 #endif
   }

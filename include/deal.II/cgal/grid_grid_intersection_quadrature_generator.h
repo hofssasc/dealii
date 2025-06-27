@@ -76,12 +76,14 @@ namespace CGALWrappers
     GridGridIntersectionQuadratureGenerator(
       const Mapping<dim> &mapping_in,
       unsigned int        n_quadrature_points_1D_in,
-      BooleanOperation    boolean_operation_in);
+      BooleanOperation    boolean_operation_in,
+      bool precompute_dg_faces_in = false);
 
     void
     reinit(const Mapping<dim> &mapping_in,
            unsigned int        n_quadrature_points_1D_in,
-           BooleanOperation    boolean_operation_in);
+           BooleanOperation    boolean_operation_in,
+           bool precompute_dg_faces_in = false);
            
     void
     set_n_quadrature_points_1D(unsigned int n_quadrature_points_1D_in);
@@ -115,31 +117,43 @@ namespace CGALWrappers
 
     Quadrature<dim - 1>
     get_inside_quadrature_dg_face(
-      const typename Triangulation<dim>::cell_iterator &cell,
       unsigned int face_index) const; // precomputed dg faces
 
     NonMatching::LocationToLevelSet
     location_to_geometry(unsigned int cell_index) const;
+    
     NonMatching::LocationToLevelSet
     location_to_geometry(
       const typename Triangulation<dim>::cell_iterator &cell) const;
+
+    NonMatching::LocationToLevelSet
+    location_to_geometry(
+      const typename Triangulation<dim>::cell_iterator &cell, unsigned int face_index) const;
 
     void
     output_fitted_mesh() const;
 
   private:
+
+    CGAL::Bounded_side
+    side_of_surface_mesh(const Point<dim> & point) const;
+
+
     const Mapping<dim> *mapping;
     unsigned int        n_quadrature_points_1D;
     BooleanOperation    boolean_operation;
+    bool                precompute_dg_faces;
 
-    CGALPolygon                   fitted_2D_mesh;
-    CGAL::Surface_mesh<CGALPoint> fitted_surface_mesh;
+    CGALPolygon                   surface_mesh_2D;
+    CGAL::Surface_mesh<CGALPoint> surface_mesh_3D;
+    std::unique_ptr<CGAL::Side_of_triangle_mesh<CGAL::Surface_mesh<CGALPoint>, K>> 
+      side_of_surface_mesh_3D;
 
     Quadrature<dim>                             quad_cells;
     NonMatching::ImmersedSurfaceQuadrature<dim> quad_surface;
     Quadrature<dim - 1>                         quad_dg_face;
-    std::map<unsigned int, std::vector<Quadrature<dim - 1>>>
-      quad_dg_face_vec; // precomputed dg faces
+    std::vector<Quadrature<dim - 1>>            quad_dg_face_vec; // precomputed dg faces
+
     std::vector<NonMatching::LocationToLevelSet> cell_locations;
     std::vector<NonMatching::LocationToLevelSet> face_locations;
   };
