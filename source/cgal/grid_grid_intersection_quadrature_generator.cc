@@ -828,10 +828,27 @@ namespace CGALWrappers
   }
 
   template <int dim>
+  Quadrature<dim>
+  GridGridIntersectionQuadratureGenerator<dim>::get_outside_quadrature() const
+  {
+    AssertThrow(false, ExcNotImplemented());
+    return quad_cells;
+  }
+
+  template <int dim>
   Quadrature<dim - 1>
   GridGridIntersectionQuadratureGenerator<dim>::get_inside_quadrature_dg_face()
     const
   {
+    return quad_dg_face;
+  }
+
+  template <int dim>
+  Quadrature<dim - 1>
+  GridGridIntersectionQuadratureGenerator<dim>::get_outside_quadrature_dg_face()
+  const
+  {
+    AssertThrow(false, ExcNotImplemented());
     return quad_dg_face;
   }
 

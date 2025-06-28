@@ -112,8 +112,14 @@ namespace CGALWrappers
     Quadrature<dim>
     get_inside_quadrature() const;
 
+    Quadrature<dim>
+    get_outside_quadrature() const;
+
     Quadrature<dim - 1>
     get_inside_quadrature_dg_face() const;
+
+    Quadrature<dim - 1>
+    get_outside_quadrature_dg_face() const;
 
     Quadrature<dim - 1>
     get_inside_quadrature_dg_face(
