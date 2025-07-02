@@ -1675,17 +1675,6 @@ namespace GridTools
 
 
 
-  template <int dim, int spacedim>
-  std::vector<std::vector<std::pair<unsigned int, Point<spacedim>>>>
-  extract_ordered_boundary_vertices(const Triangulation<dim, spacedim> &tria,
-                                    const Mapping<dim, spacedim>       &mapping)
-  {
-    Assert(false, ExcMessage("Only implemented for dim = spacdim = 2"));
-    return {};
-  }
-
-
-
   template <>
   std::vector<std::vector<std::pair<unsigned int, Point<2>>>>
   extract_ordered_boundary_vertices<2, 2>(const Triangulation<2, 2> &tria,

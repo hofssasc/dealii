@@ -61,12 +61,6 @@ for (deal_II_dimension : DIMENSIONS; deal_II_space_dimension : SPACE_DIMENSIONS)
         const Triangulation<deal_II_dimension, deal_II_space_dimension> &tria);
 
       template std::vector<
-        std::vector<std::pair<unsigned int, Point<deal_II_space_dimension>>>>
-      extract_ordered_boundary_vertices(
-        const Triangulation<deal_II_dimension, deal_II_space_dimension> &tria,
-        const Mapping<deal_II_dimension, deal_II_space_dimension> &mapping);
-
-      template std::vector<
         std::set<Triangulation<deal_II_dimension,
                                deal_II_space_dimension>::active_cell_iterator>>
       vertex_to_cell_map(
