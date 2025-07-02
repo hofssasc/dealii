@@ -55,12 +55,13 @@ test(unsigned int refinement_domain, unsigned int refinement_boundary)
     {"simplex", "-0.1, -0.1 ; 0.9 , -0.1 ; -0.1, 0.9"},
     {"simplex", "-0.5, -0.5 ; 0.5 , 0.5 ; -0.5, 1.5"},
     {"hyper_ball_balanced", "0.0,0.0 : 1.0"},    // centered circle
-    {"hyper_ball_balanced", "-0.1 ,1.0 : 0.5"}}; // only partially in domain
+    {"hyper_ball_balanced", "-0.1 ,1.0 : 0.5"},
+    {"hyper_shell", "0.5, 0.5 : 0.1 : 0.4 : 0 : false"}}; // only partially in domain
   // Notes: cell size of domain must be a order smaller than the size of the
   // domain mesh because of classify
-  //  this is in FEM always the case (but keep in mind that cells that contain a
-  //  whole boundary mesh  or only have vertices on the edge of it will be
-  //  classified as not cut -> change refinement to 1 to see effect)
+  // this is in FEM always the case (but keep in mind that cells that contain a
+  // whole boundary mesh  or only have vertices on the edge of it will be
+  // classified as not cut -> change refinement to 1 to see effect
 
   // The cell to be cut
   GridGenerator::reference_cell(tria_domain, ReferenceCells::Quadrilateral);

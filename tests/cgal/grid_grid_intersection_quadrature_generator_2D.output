@@ -49,3 +49,8 @@ DEAL::Area :0.857664 , surface :3.79829
 DEAL::
 DEAL::Area :0.142336 , surface :1.55851
 DEAL::
+DEAL::name: hyper_shell
+DEAL::Area :0.550000 , surface :7.10583
+DEAL::
+DEAL::Area :0.450000 , surface :3.10583
+DEAL::

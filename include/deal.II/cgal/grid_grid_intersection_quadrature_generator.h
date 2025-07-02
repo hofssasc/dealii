@@ -149,7 +149,7 @@ namespace CGALWrappers
     BooleanOperation    boolean_operation;
     bool                precompute_dg_faces;
 
-    CGALPolygon                   surface_mesh_2D;
+    CGALPolygonWithHoles          surface_mesh_2D;
     CGAL::Surface_mesh<CGALPoint> surface_mesh_3D;
     std::unique_ptr<
       CGAL::Side_of_triangle_mesh<CGAL::Surface_mesh<CGALPoint>, K>>

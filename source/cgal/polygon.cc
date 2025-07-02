@@ -83,22 +83,32 @@ namespace CGALWrappers
   {
     auto boundaries =
       GridTools::extract_ordered_boundary_vertices(tria, mapping);
-    std::vector<CGAL::Polygon_2<KernelType>> polygons;
+    CGAL::Polygon_2<KernelType> outer_boundary;
+    std::vector<CGAL::Polygon_2<KernelType>> holes;
+    holes.reserve(boundaries.size()-1);
 
-    for (const auto &boundary : boundaries)
+    for (unsigned int i = 0; i < boundaries.size(); ++i)
       {
         CGAL::Polygon_2<KernelType> current_polygon;
-        for (const auto &vertices : boundary)
+        for (const auto &vertices : boundaries[i])
           {
             current_polygon.push_back(
               dealii_point_to_cgal_point<CGAL::Point_2<KernelType>, 2>(
                 vertices.second));
           }
-        polygons.push_back(current_polygon);
+        if(current_polygon.is_counterclockwise_oriented())
+        {
+          outer_boundary = current_polygon;
+        }
+        else
+        {
+          holes.push_back(current_polygon);
+        }
+
       }
-    return CGAL::Polygon_with_holes_2<KernelType>(polygons.front(),
-                                                  polygons.begin() + 1,
-                                                  polygons.end());
+    return CGAL::Polygon_with_holes_2<KernelType>(outer_boundary,
+                                                  holes.begin(),
+                                                  holes.end());
   }
 
 
