@@ -114,6 +114,9 @@ namespace CGALWrappers
   GridGridIntersectionQuadratureGenerator<2>::setup_domain_boundary(
     const TriangulationType &tria_fitted_in)
   {
+    Assert(mapping != nullptr,
+      ExcMessage("Reinit first with valid mapping"));
+      
     surface_mesh_2D = dealii_tria_to_cgal_polygon<K>(tria_fitted_in, *mapping);
 
     Assert(surface_mesh_2D.outer_boundary().is_simple(), ExcMessage("Polygon not simple"));
