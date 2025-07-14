@@ -314,10 +314,6 @@ namespace CGALWrappers
         // cell outside also has vertices on the boundary but is ignored
         // because then the boundary integral would be performed twice
       }
-    // maybe not appropriate here, should do a destructor
-    // but destruct shared pointer before surface_mesh_3D!!
-    // without this line-> error in destructor (i think because of that)
-    side_of_surface_mesh_3D.reset();
   }
 
   template <>

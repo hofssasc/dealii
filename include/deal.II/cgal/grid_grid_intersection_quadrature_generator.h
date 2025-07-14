@@ -150,10 +150,10 @@ namespace CGALWrappers
     bool                precompute_dg_faces;
 
     CGALPolygonWithHoles          surface_mesh_2D;
-    CGAL::Surface_mesh<CGALPoint> surface_mesh_3D;
     std::unique_ptr<
       CGAL::Side_of_triangle_mesh<CGAL::Surface_mesh<CGALPoint>, K>>
       side_of_surface_mesh_3D;
+    CGAL::Surface_mesh<CGALPoint> surface_mesh_3D;
 
     Quadrature<dim>                             quad_cells;
     NonMatching::ImmersedSurfaceQuadrature<dim> quad_surface;
