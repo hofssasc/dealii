@@ -14,11 +14,12 @@
 
 // Check extract used_vertices.
 
+#include <deal.II/fe/mapping_q.h>
+
 #include <deal.II/grid/grid_generator.h>
 #include <deal.II/grid/grid_out.h>
 #include <deal.II/grid/grid_tools.h>
 #include <deal.II/grid/tria.h>
-#include <deal.II/fe/mapping_q.h>
 
 #include "../tests.h"
 
@@ -46,17 +47,18 @@ test()
       deallog << "Name: " << name << std::endl;
       GridGenerator::generate_from_name_and_arguments(tria_in, name, args);
 
-      auto boundaries =  GridTools::extract_ordered_boundary_vertices(tria_in, mapping);
+      auto boundaries =
+        GridTools::extract_ordered_boundary_vertices(tria_in, mapping);
 
       unsigned int count = 0;
-      for(const auto &boundary : boundaries)
-      {
-        deallog << "Closed boundary number: " << count++ << std::endl;
-        for(const auto &v : boundary)
+      for (const auto &boundary : boundaries)
         {
-          deallog << "Vertex: " << v.first << ": " << v.second << std::endl;
+          deallog << "Closed boundary number: " << count++ << std::endl;
+          for (const auto &v : boundary)
+            {
+              deallog << "Vertex: " << v.first << ": " << v.second << std::endl;
+            }
         }
-      }
 
       tria_in.clear();
       deallog << std::endl;

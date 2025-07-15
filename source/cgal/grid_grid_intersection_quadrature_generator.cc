@@ -109,17 +109,52 @@ namespace CGALWrappers
   }
 
   template <>
+  template <>
+  void
+  GridGridIntersectionQuadratureGenerator<2>::setup_domain_boundary<
+    CGAL::Polygon_with_holes_2<
+      CGAL::Exact_predicates_exact_constructions_kernel>>(
+    const CGAL::Polygon_with_holes_2<
+      CGAL::Exact_predicates_exact_constructions_kernel> &surface_mesh_2D_in)
+  {
+    surface_mesh_2D = surface_mesh_2D_in;
+
+    Assert(surface_mesh_2D.outer_boundary().is_simple(),
+           ExcMessage("Polygon not simple"));
+    Assert(surface_mesh_2D.outer_boundary().is_counterclockwise_oriented(),
+           ExcMessage("Polygon not oriented"));
+  }
+
+  template <>
   template <typename TriangulationType>
   void
   GridGridIntersectionQuadratureGenerator<2>::setup_domain_boundary(
     const TriangulationType &tria_fitted_in)
   {
-    Assert(mapping != nullptr,
-      ExcMessage("Reinit first with valid mapping"));
-      
+    Assert(mapping != nullptr, ExcMessage("Reinit first with valid mapping"));
+
     surface_mesh_2D = dealii_tria_to_cgal_polygon<K>(tria_fitted_in, *mapping);
 
-    Assert(surface_mesh_2D.outer_boundary().is_simple(), ExcMessage("Polygon not simple"));
+    Assert(surface_mesh_2D.outer_boundary().is_simple(),
+           ExcMessage("Polygon not simple"));
+    Assert(surface_mesh_2D.outer_boundary().is_counterclockwise_oriented(),
+           ExcMessage("Polygon not oriented"));
+  }
+
+  template <>
+  template <>
+  void
+  GridGridIntersectionQuadratureGenerator<3>::setup_domain_boundary<
+    CGAL::Surface_mesh<
+      CGAL::Point_3<CGAL::Exact_predicates_exact_constructions_kernel>>>(
+    const CGAL::Surface_mesh<
+      CGAL::Point_3<CGAL::Exact_predicates_exact_constructions_kernel>>
+      &surface_mesh_3D_in)
+  {
+    surface_mesh_3D = surface_mesh_3D_in;
+
+    Assert(surface_mesh_2D.outer_boundary().is_simple(),
+           ExcMessage("Polygon not simple"));
     Assert(surface_mesh_2D.outer_boundary().is_counterclockwise_oriented(),
            ExcMessage("Polygon not oriented"));
   }
@@ -155,32 +190,30 @@ namespace CGALWrappers
   {
     auto cgal_point = dealii_point_to_cgal_point<CGALPoint2, 2>(point);
 
-    auto bounded_side = CGAL::bounded_side_2(
-      surface_mesh_2D.outer_boundary().begin(),
-      surface_mesh_2D.outer_boundary().end(),
-      cgal_point);
-    if(bounded_side == CGAL::ON_BOUNDED_SIDE)
-    {
-      for (const auto &hole : surface_mesh_2D.holes())
-        {
-          bounded_side = CGAL::bounded_side_2(
-            hole.begin(),
-            hole.end(),
-            cgal_point);
-          if(bounded_side == CGAL::ON_BOUNDARY)
+    auto bounded_side =
+      CGAL::bounded_side_2(surface_mesh_2D.outer_boundary().begin(),
+                           surface_mesh_2D.outer_boundary().end(),
+                           cgal_point);
+    if (bounded_side == CGAL::ON_BOUNDED_SIDE)
+      {
+        for (const auto &hole : surface_mesh_2D.holes())
           {
-            return CGAL::ON_BOUNDARY;
+            bounded_side =
+              CGAL::bounded_side_2(hole.begin(), hole.end(), cgal_point);
+            if (bounded_side == CGAL::ON_BOUNDARY)
+              {
+                return CGAL::ON_BOUNDARY;
+              }
+            else if (bounded_side == CGAL::ON_BOUNDED_SIDE)
+              {
+                return CGAL::ON_UNBOUNDED_SIDE;
+              }
+            else
+              {
+                bounded_side = CGAL::ON_BOUNDED_SIDE;
+              }
           }
-          else if(bounded_side == CGAL::ON_BOUNDED_SIDE)
-          {
-            return CGAL::ON_UNBOUNDED_SIDE;
-          }
-          else
-          {
-            bounded_side = CGAL::ON_BOUNDED_SIDE;
-          }
-        }
-    }
+      }
     return bounded_side;
   }
 
@@ -322,14 +355,14 @@ namespace CGALWrappers
     const typename Triangulation<2>::cell_iterator &cell)
   {
     // generate polygon for current cell
-    auto polygon_cell = dealii_cell_to_cgal_polygon<K>(cell, *mapping);
+    auto polygon_cell     = dealii_cell_to_cgal_polygon<K>(cell, *mapping);
     auto polygon_cell_w_h = polygon_to_polygon_with_holes<K>(polygon_cell);
 
     // perform boolean operation on cell and fitted mesh
     // result is a polygon with holes
     auto polygon_out_vec = compute_boolean_operation<K>(polygon_cell_w_h,
-                              surface_mesh_2D,
-                              boolean_operation);
+                                                        surface_mesh_2D,
+                                                        boolean_operation);
 
     // quadrature area in a cell could be split into two polygons
     // implemented but occurrence is not expected for smooth boundaries
@@ -686,12 +719,12 @@ namespace CGALWrappers
         return;
       }
 
-    auto polygon_cell = dealii_cell_to_cgal_polygon<K>(cell, *mapping);
+    auto polygon_cell     = dealii_cell_to_cgal_polygon<K>(cell, *mapping);
     auto polygon_cell_w_h = polygon_to_polygon_with_holes<K>(polygon_cell);
 
     auto polygon_out_vec = compute_boolean_operation(polygon_cell_w_h,
-                              surface_mesh_2D,
-                              boolean_operation);
+                                                     surface_mesh_2D,
+                                                     boolean_operation);
 
     std::vector<Point<1>> quadrature_points;
     std::vector<double>   quadrature_weights;
@@ -862,7 +895,7 @@ namespace CGALWrappers
   template <int dim>
   Quadrature<dim - 1>
   GridGridIntersectionQuadratureGenerator<dim>::get_outside_quadrature_dg_face()
-  const
+    const
   {
     AssertThrow(false, ExcNotImplemented());
     return quad_dg_face;

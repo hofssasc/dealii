@@ -54,9 +54,10 @@ test(unsigned int refinement_domain, unsigned int refinement_boundary)
      "0.0, 0.0 ; 1.0 , 0.0 ; 0.0, 1.0"}, // simplex cutting through diagonal
     {"simplex", "-0.1, -0.1 ; 0.9 , -0.1 ; -0.1, 0.9"},
     {"simplex", "-0.5, -0.5 ; 0.5 , 0.5 ; -0.5, 1.5"},
-    {"hyper_ball_balanced", "0.0,0.0 : 1.0"},    // centered circle
+    {"hyper_ball_balanced", "0.0,0.0 : 1.0"}, // centered circle
     {"hyper_ball_balanced", "-0.1 ,1.0 : 0.5"},
-    {"hyper_shell", "0.5, 0.5 : 0.1 : 0.4 : 0 : false"}}; // only partially in domain
+    {"hyper_shell",
+     "0.5, 0.5 : 0.1 : 0.4 : 0 : false"}}; // only partially in domain
   // Notes: cell size of domain must be a order smaller than the size of the
   // domain mesh because of classify
   // this is in FEM always the case (but keep in mind that cells that contain a

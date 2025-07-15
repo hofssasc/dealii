@@ -64,13 +64,14 @@ for (dim : SPACE_DIMENSIONS)
     GridGridIntersectionQuadratureGenerator<dim>::get_inside_quadrature() const;
 
     template Quadrature<dim>
-    GridGridIntersectionQuadratureGenerator<dim>::get_outside_quadrature() const;
+    GridGridIntersectionQuadratureGenerator<dim>::get_outside_quadrature()
+      const;
 
     template Quadrature<dim - 1> GridGridIntersectionQuadratureGenerator<
       dim>::get_inside_quadrature_dg_face() const;
 
-    template Quadrature<dim - 1>
-    GridGridIntersectionQuadratureGenerator<dim>::get_outside_quadrature_dg_face() const;
+    template Quadrature<dim - 1> GridGridIntersectionQuadratureGenerator<
+      dim>::get_outside_quadrature_dg_face() const;
 
     template Quadrature<dim - 1>
     GridGridIntersectionQuadratureGenerator<dim>::get_inside_quadrature_dg_face(

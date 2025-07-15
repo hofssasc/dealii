@@ -83,9 +83,9 @@ namespace CGALWrappers
   {
     auto boundaries =
       GridTools::extract_ordered_boundary_vertices(tria, mapping);
-    CGAL::Polygon_2<KernelType> outer_boundary;
+    CGAL::Polygon_2<KernelType>              outer_boundary;
     std::vector<CGAL::Polygon_2<KernelType>> holes;
-    holes.reserve(boundaries.size()-1);
+    holes.reserve(boundaries.size() - 1);
 
     for (unsigned int i = 0; i < boundaries.size(); ++i)
       {
@@ -96,15 +96,14 @@ namespace CGALWrappers
               dealii_point_to_cgal_point<CGAL::Point_2<KernelType>, 2>(
                 vertices.second));
           }
-        if(current_polygon.is_counterclockwise_oriented())
-        {
-          outer_boundary = current_polygon;
-        }
+        if (current_polygon.is_counterclockwise_oriented())
+          {
+            outer_boundary = current_polygon;
+          }
         else
-        {
-          holes.push_back(current_polygon);
-        }
-
+          {
+            holes.push_back(current_polygon);
+          }
       }
     return CGAL::Polygon_with_holes_2<KernelType>(outer_boundary,
                                                   holes.begin(),
