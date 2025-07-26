@@ -137,7 +137,7 @@ namespace CGALWrappers
                          unsigned int face_index) const;
 
     void
-    output_fitted_mesh() const;
+    output_fitted_mesh(std::string filename = "surface_mesh") const;
 
   private:
     CGAL::Bounded_side

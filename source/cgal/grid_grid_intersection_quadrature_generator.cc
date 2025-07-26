@@ -153,10 +153,17 @@ namespace CGALWrappers
   {
     surface_mesh_3D = surface_mesh_3D_in;
 
-    Assert(surface_mesh_2D.outer_boundary().is_simple(),
-           ExcMessage("Polygon not simple"));
-    Assert(surface_mesh_2D.outer_boundary().is_counterclockwise_oriented(),
-           ExcMessage("Polygon not oriented"));
+    side_of_surface_mesh_3D = std::make_unique<
+      CGAL::Side_of_triangle_mesh<CGAL::Surface_mesh<CGALPoint>, K>>(
+      surface_mesh_3D);
+
+    Assert(surface_mesh_3D.is_valid(),
+           ExcMessage("The CGAL mesh is not valid"));
+    Assert(CGAL::is_closed(surface_mesh_3D),
+           ExcMessage("The CGAL mesh is not closed"));
+    Assert(CGAL::Polygon_mesh_processing::is_outward_oriented(surface_mesh_3D),
+           ExcMessage(
+             "The normal vectors of the CGAL mesh are not oriented outwards"));
   }
 
   template <>
@@ -272,7 +279,7 @@ namespace CGALWrappers
     // now find out if inside or not
     for (const auto &cell : tria_unfitted.active_cell_iterators())
       {
-        if (!cell->is_locally_owned())
+        if (cell->is_artificial())
           continue;
 
         unsigned int inside_count = 0;
@@ -611,7 +618,7 @@ namespace CGALWrappers
     std::vector<Point<3>>     quadrature_points;
     std::vector<double>       quadrature_weights;
     std::vector<Tensor<1, 3>> normals;
-    double ref_area = std::pow(cell->minimum_vertex_distance(), 2) * 0.0000001;
+    double ref_area = std::pow(cell->minimum_vertex_distance(), 2) * 1000 * std::numeric_limits<double>::epsilon();
     for (const auto &out_surface_face : out_surface.faces())
       {
         if (CGAL::abs(CGAL::Polygon_mesh_processing::face_area(out_surface_face,
@@ -936,11 +943,10 @@ namespace CGALWrappers
 
   template <>
   void
-  GridGridIntersectionQuadratureGenerator<2>::output_fitted_mesh() const
+  GridGridIntersectionQuadratureGenerator<2>::output_fitted_mesh(std::string filename) const
   {
-    std::string   filename = "fitted_polygon.vtu";
-    std::ofstream file(filename);
-    if (!file)
+    std::ofstream out(filename + ".vtu");
+    if (!out)
       {
         std::cerr << "Error opening file for writing: " << filename
                   << std::endl;
@@ -949,79 +955,81 @@ namespace CGALWrappers
 
     const std::size_t n = surface_mesh_2D.outer_boundary().size();
 
-    file << R"(<?xml version="1.0"?>)"
+    out << R"(<?xml version="1.0"?>)"
          << "\n";
-    file
+    out
       << R"(<VTKFile type="UnstructuredGrid" version="0.1" byte_order="LittleEndian">)"
       << "\n";
-    file << R"(  <UnstructuredGrid>)"
+    out << R"(  <UnstructuredGrid>)"
          << "\n";
-    file << R"(    <Piece NumberOfPoints=")" << n << R"(" NumberOfCells="1">)"
+    out << R"(    <Piece NumberOfPoints=")" << n << R"(" NumberOfCells="1">)"
          << "\n";
 
     // Points section
-    file << R"(      <Points>)"
+    out << R"(      <Points>)"
          << "\n";
-    file
+    out
       << R"(        <DataArray type="Float64" NumberOfComponents="3" format="ascii">)"
       << "\n";
 
     for (const auto &p : surface_mesh_2D.outer_boundary().container())
       {
-        file << p.x() << " " << p.y() << " 0 ";
+        out << p.x() << " " << p.y() << " 0 ";
       }
-    file << "\n";
+    out << "\n";
 
-    file << R"(        </DataArray>)"
+    out << R"(        </DataArray>)"
          << "\n";
-    file << R"(      </Points>)"
+    out << R"(      </Points>)"
          << "\n";
 
     // Cells section
     // Connectivity: indices of vertices in order
-    file << R"(      <Cells>)"
+    out << R"(      <Cells>)"
          << "\n";
 
     // Connectivity
-    file
+    out
       << R"(        <DataArray type="Int32" Name="connectivity" format="ascii">)";
     for (std::size_t i = 0; i < n; ++i)
       {
-        file << i << " ";
+        out << i << " ";
       }
-    file << R"(</DataArray>)"
+    out << R"(</DataArray>)"
          << "\n";
 
     // Offsets: cumulative count of vertices after each cell
     // Here only one cell with n vertices
-    file << R"(        <DataArray type="Int32" Name="offsets" format="ascii">)";
-    file << n << R"(</DataArray>)"
+    out << R"(        <DataArray type="Int32" Name="offsets" format="ascii">)";
+    out << n << R"(</DataArray>)"
          << "\n";
 
     // Types: VTK cell type for polygon is 7
     // (See https://vtk.org/wp-content/uploads/2015/04/file-formats.pdf)
-    file
+    out
       << R"(        <DataArray type="UInt8" Name="types" format="ascii">7</DataArray>)"
       << "\n";
 
-    file << R"(      </Cells>)"
+    out << R"(      </Cells>)"
          << "\n";
 
-    file << R"(    </Piece>)"
+    out << R"(    </Piece>)"
          << "\n";
-    file << R"(  </UnstructuredGrid>)"
+    out << R"(  </UnstructuredGrid>)"
          << "\n";
-    file << R"(</VTKFile>)"
+    out << R"(</VTKFile>)"
          << "\n";
 
-    file.close();
+    out.close();
   }
 
   template <>
   void
-  GridGridIntersectionQuadratureGenerator<3>::output_fitted_mesh() const
+  GridGridIntersectionQuadratureGenerator<3>::output_fitted_mesh(std::string filename) const
   {
-    CGAL::IO::write_polygon_mesh("surface_mesh_3D.stl", surface_mesh_3D);
+    //maybe instead write_STL which supports std:ostream
+    //https://doc.cgal.org/latest/BGL/group__PkgBGLIoFuncsSTL.html#ga3523577d7d6413202f71b853c6c1316f
+    CGAL::IO::write_polygon_mesh(filename + ".stl", surface_mesh_3D);
   }
 
 
