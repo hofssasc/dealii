@@ -30,6 +30,7 @@ namespace CGALWrappers
     : mapping(nullptr)
     , n_quadrature_points_1D(0)
     , boolean_operation(BooleanOperation::compute_intersection)
+    , inside_domain(CGAL::ON_BOUNDED_SIDE)
     , precompute_dg_faces(false)
   {
     Assert(
@@ -57,6 +58,8 @@ namespace CGALWrappers
     Assert(boolean_operation_in == BooleanOperation::compute_intersection ||
              boolean_operation_in == BooleanOperation::compute_difference,
            ExcMessage("Union and corerefinement not implemented"));
+
+    set_inside_domain();
   }
 
   template <int dim>
@@ -74,6 +77,10 @@ namespace CGALWrappers
     Assert(boolean_operation_in == BooleanOperation::compute_intersection ||
              boolean_operation_in == BooleanOperation::compute_difference,
            ExcMessage("Union and corerefinement not implemented"));
+
+    // What is considered inside or outside the domain depends on the input of
+    // the user
+    set_inside_domain();
   }
 
   template <int dim>
@@ -197,26 +204,34 @@ namespace CGALWrappers
   {
     auto cgal_point = dealii_point_to_cgal_point<CGALPoint2, 2>(point);
 
+    // Check if point is inside the outer boundary of the polygon
     auto bounded_side =
       CGAL::bounded_side_2(surface_mesh_2D.outer_boundary().begin(),
                            surface_mesh_2D.outer_boundary().end(),
                            cgal_point);
+
+    // If it is not inside outer boundary, directly return outside or on
+    // boundary.
     if (bounded_side == CGAL::ON_BOUNDED_SIDE)
       {
+        // Check if it is inside any of the holes.
         for (const auto &hole : surface_mesh_2D.holes())
           {
             bounded_side =
               CGAL::bounded_side_2(hole.begin(), hole.end(), cgal_point);
             if (bounded_side == CGAL::ON_BOUNDARY)
               {
+                // On the boundary of a hole, thus on the boundary
                 return CGAL::ON_BOUNDARY;
               }
             else if (bounded_side == CGAL::ON_BOUNDED_SIDE)
               {
+                // Inside a hole, thus outside
                 return CGAL::ON_UNBOUNDED_SIDE;
               }
             else
               {
+                // Not inside current hole, continue checking
                 bounded_side = CGAL::ON_BOUNDED_SIDE;
               }
           }
@@ -230,14 +245,17 @@ namespace CGALWrappers
     const Point<3> &point) const
   {
     auto cgal_point = dealii_point_to_cgal_point<CGALPoint, 3>(point);
+    // In the 3D case no holes are supported, so directly use
+    // side_of_triangle_mesh
     return (*side_of_surface_mesh_3D)(cgal_point);
   }
 
-  // The classification inside is only valid if no vertex is on the
-  // boundary. Technically if one vertex is on the boundary the cell could still
-  // be completely inside but a conservatice approach is chosen.
-  // Since we only check for edges we guess it might intersect.
-  //-> in this case we will generate a volume integral over whole cell!
+  // The cell is classified inside only if no vertex is on the boundary.
+  // Technically if one vertex is on the boundary the cell could still
+  // be completely inside but since only a limited amount of points is
+  // checked it cannot be guaranteed.
+  //-> generate quadrature function will detect intersection or if no
+  //   intersection generate a quadrature for whole cell!
   template <int dim>
   template <typename TriangulationType>
   void
@@ -250,20 +268,9 @@ namespace CGALWrappers
     face_locations.assign(tria_unfitted.n_raw_faces(),
                           NonMatching::LocationToLevelSet::unassigned);
 
-    CGAL::Bounded_side inside_domain;
-    if (boolean_operation == BooleanOperation::compute_intersection)
-      {
-        inside_domain = CGAL::ON_BOUNDED_SIDE;
-      }
-    else if (boolean_operation == BooleanOperation::compute_difference)
-      {
-        inside_domain = CGAL::ON_UNBOUNDED_SIDE;
-      }
-    else
-      {
-        DEAL_II_ASSERT_UNREACHABLE();
-      }
-
+    // classify all vertices of the triangulation.
+    // This is done to avoid classifying the same vertex multiple times.
+    // (cells as well as faces share vertices)
     const auto &all_vertices = tria_unfitted.get_vertices();
     const auto &used_flags   = tria_unfitted.get_used_vertices();
     std::vector<CGAL::Bounded_side> vertex_locations(all_vertices.size(),
@@ -276,83 +283,82 @@ namespace CGALWrappers
           }
       }
 
-    // now find out if inside or not
+    // Classify all cells and faces of the triangulation.
+    // Checking the center of the face and all vertices of the face.
     for (const auto &cell : tria_unfitted.active_cell_iterators())
       {
         if (cell->is_artificial())
           continue;
 
-        unsigned int inside_count = 0;
-        unsigned int total_count  = 0;
+        unsigned int inside_count_cell = 0;
+        unsigned int total_count_cell  = 0;
         for (size_t f = 0; f < cell->n_faces(); f++)
           {
             unsigned int inside_count_face   = 0;
             unsigned int boundary_count_face = 0;
-            total_count += cell->face(f)->n_vertices() + 1;
 
             // test center of face
             auto result = side_of_surface_mesh(cell->face(f)->center());
-
-            bool center_is_inside = (result == inside_domain);
-
-            inside_count += center_is_inside;
-            inside_count_face += center_is_inside;
+            inside_count_face += (result == inside_domain);
             boundary_count_face += (result == CGAL::ON_BOUNDARY);
 
             // test vertices of face
             for (size_t v = 0; v < cell->face(f)->n_vertices(); v++)
               {
-                bool v_is_inside =
-                  (vertex_locations[cell->face(f)->vertex_index(v)] ==
-                   inside_domain);
-                inside_count_face += v_is_inside;
-                inside_count += v_is_inside;
-                boundary_count_face +=
-                  (vertex_locations[cell->face(f)->vertex_index(v)] ==
-                   CGAL::ON_BOUNDARY);
+                result = vertex_locations[cell->face(f)->vertex_index(v)];
+                inside_count_face += (result == inside_domain);
+                boundary_count_face += (result == CGAL::ON_BOUNDARY);
               }
 
             if (inside_count_face == 0 &&
                 boundary_count_face != cell->n_faces() + 1)
               {
+                // case 1: no vertex inside and not all on boundary
                 face_locations[cell->face(f)->index()] =
                   NonMatching::LocationToLevelSet::outside;
               }
             else if (inside_count_face == cell->n_faces() + 1)
               {
+                // case 2: all vertices inside
                 face_locations[cell->face(f)->index()] =
                   NonMatching::LocationToLevelSet::inside;
               }
             else
               {
+                // case 3: at least one vertex inside and at least one
+                // on boundary or outside
                 face_locations[cell->face(f)->index()] =
                   NonMatching::LocationToLevelSet::intersected;
               }
+            inside_count_cell += inside_count_face;
+            total_count_cell += cell->face(f)->n_vertices() + 1;
           }
 
-        if (inside_count == 0) // case 1: all vertices outside or on boundary:
-                               // not considered (outside)
+        if (inside_count_cell == 0)
           {
+            // case 1: all vertices outside
+            // (all on boundary is not possible))
             cell_locations[cell->active_cell_index()] =
               NonMatching::LocationToLevelSet::outside;
           }
-        else if (inside_count == total_count) // case 2: all vertices inside:
-                                              // considered (inside)
+        else if (inside_count_cell == total_count_cell)
           {
+            // case 2: all vertices inside
             cell_locations[cell->active_cell_index()] =
               NonMatching::LocationToLevelSet::inside;
           }
-        else // case 3: at least one vertex inside and at least one on boundary
-             // or outside
+        else
           {
+            // case 3: at least one vertex inside and at least one
+            // on boundary or outside
             cell_locations[cell->active_cell_index()] =
               NonMatching::LocationToLevelSet::intersected;
           }
         // Note: construction of case 1 and 3 make sure that if two vertices are
-        // on the boundary the cell
-        // inside is considered cut and takes account for the face integral. The
-        // cell outside also has vertices on the boundary but is ignored
-        // because then the boundary integral would be performed twice
+        // on the boundary the cell inside is considered cut and takes account
+        // for the face integral. The cell outside also has vertices on the
+        // boundary but is ignored because otherwise the boundary integral would
+        // be performed twice.
       }
   }
 
@@ -361,33 +367,34 @@ namespace CGALWrappers
   GridGridIntersectionQuadratureGenerator<2>::generate(
     const typename Triangulation<2>::cell_iterator &cell)
   {
-    // generate polygon for current cell
+    // generate polygon for current cell.
     auto polygon_cell     = dealii_cell_to_cgal_polygon<K>(cell, *mapping);
     auto polygon_cell_w_h = polygon_to_polygon_with_holes<K>(polygon_cell);
 
-    // perform boolean operation on cell and fitted mesh
-    // result is a polygon with holes
+    // perform boolean operation on cell and surface mesh
+    // result is a vector of polygons with holes.
     auto polygon_out_vec = compute_boolean_operation<K>(polygon_cell_w_h,
                                                         surface_mesh_2D,
                                                         boolean_operation);
 
-    // quadrature area in a cell could be split into two polygons
-    // implemented but occurrence is not expected for smooth boundaries
-    // Assert(polygon_out_vec.size() == 1,
-    //        ExcMessage(
-    //          "Not a single polygon with holes, disconnected domain!!"));
-
+    // quadrature area in a cell could be split into polygons.
     std::vector<std::array<dealii::Point<2>, 3>> vec_of_simplices;
     for (const auto &polygon_out : polygon_out_vec)
       {
-        Assert(polygon_out.outer_boundary().is_simple(),
-               ExcMessage("The Polygon outer boundary is not simple"));
-        // quadrature area in a cell cannot be a polygon with holes
-        Assert(!polygon_out.has_holes(), ExcMessage("The Polygon has holes"));
+        Assert(
+          polygon_out.outer_boundary().is_simple(),
+          ExcMessage(
+            "Generate cell quadrature: The cut cell polygon outer boundary is not simple"));
 
-        // partition polygon into convex polygons
-        // these can be meshed as convex hull
-        // Note: could use CGAL::approx_convex_partition_2
+        // quadrature area in a cut cell cannot be a polygon with holes, then
+        // the FEM mesh is to coarse.
+        Assert(!polygon_out.has_holes(),
+               ExcMessage(
+                 "Generate cell quadrature: The cut cell polygon has holes"));
+
+        // partition polygon into convex polygons these can be meshed
+        // efficiently as convex hull. Note: could use
+        // CGAL::approx_convex_partition_2
         Traits                       partition_traits;
         std::list<Traits::Polygon_2> convex_polygons;
         CGAL::optimal_convex_partition_2(
@@ -396,6 +403,8 @@ namespace CGALWrappers
           std::back_inserter(convex_polygons),
           partition_traits);
 
+        // create simmplex mesh for each convex polygon, constraints ensure
+        // exact representation of surface.
         Triangulation2 tria;
         for (const auto &convex_poly : convex_polygons)
           {
@@ -406,7 +415,7 @@ namespace CGALWrappers
                                    convex_poly.vertices_end(),
                                    true);
 
-            // Extract simplices and construct quadratures
+            // Extract simplices
             for (const auto &face : tria.finite_face_handles())
               {
                 std::array<dealii::Point<2>, 3> simplex;
@@ -425,10 +434,11 @@ namespace CGALWrappers
             tria.clear();
           }
       }
+    // generate cell quadrature
     quad_cells = QGaussSimplex<2>(n_quadrature_points_1D)
                    .mapped_quadrature(vec_of_simplices);
 
-    // surface quadrature
+    // surface quadratures
     std::vector<std::vector<Point<1>>> dg_quadrature_points;
     std::vector<std::vector<double>>   dg_quadrature_weights;
     if (precompute_dg_faces)
@@ -440,17 +450,26 @@ namespace CGALWrappers
     std::vector<Point<2>>     quadrature_points;
     std::vector<double>       quadrature_weights;
     std::vector<Tensor<1, 2>> normals;
+    // use same polygon_out_vec as for cell quadrature
     for (const auto &polygon_out : polygon_out_vec)
       {
+        // each polygon edge is either internal (surface to neighbor cell)
+        // or on the boundary (surface to domain boundary)
         for (const auto &edge_cut : polygon_out.outer_boundary().edges())
           {
-            unsigned int dg_face_index = cell->n_faces() + 1;
-            auto         p_cut_1       = edge_cut.source();
-            auto         p_cut_2       = edge_cut.target();
+            unsigned int internal_face_index = numbers::invalid_unsigned_int;
+            auto         p_cut_1             = edge_cut.source();
+            auto         p_cut_2             = edge_cut.target();
+
+            // loop over faces of the uncut cell to find faces that have edges
+            // of the polygon edge on them to find out if the edge of the cut
+            // cell (= polygon_out) is internal.
             for (const unsigned int i : cell->face_indices())
               {
                 const typename Triangulation<2, 2>::face_iterator &face =
                   cell->face(i);
+                // if face at boundary or neighbor outside th face is not
+                // internal, no need to check if polygon edge is on face
                 if (face->at_boundary() ||
                     location_to_geometry(cell->neighbor(i)) ==
                       NonMatching::LocationToLevelSet::outside)
@@ -458,6 +477,8 @@ namespace CGALWrappers
                     continue;
                   }
 
+                // check if polygon edge is on an internal face and thus
+                // internal itself.
                 auto p_uncut_1 =
                   dealii_point_to_cgal_point<CGALPoint2, 2>(face->vertex(0));
                 auto p_uncut_2 =
@@ -466,13 +487,17 @@ namespace CGALWrappers
                 if (CGAL::collinear(p_uncut_1, p_uncut_2, p_cut_1) &&
                     CGAL::collinear(p_uncut_1, p_uncut_2, p_cut_2))
                   {
-                    dg_face_index = i;
+                    internal_face_index = i;
                     break;
                   }
               }
 
-            if (dg_face_index == cell->n_faces() + 1)
+            if (internal_face_index == numbers::invalid_unsigned_int)
               {
+                // edge is not internal thus it is on the boundary of the
+                // domain.
+                // -> compute surface quadrature on reference cell.
+
                 std::array<dealii::Point<2>, 2> unit_segment;
                 mapping->transform_points_real_to_unit_cell(
                   cell,
@@ -504,9 +529,7 @@ namespace CGALWrappers
                   {
                     DEAL_II_ASSERT_UNREACHABLE();
                   }
-
                 normal /= normal.norm();
-
 
                 quadrature_points.insert(quadrature_points.end(),
                                          points.begin(),
@@ -516,19 +539,21 @@ namespace CGALWrappers
                                           weights.end());
                 normals.insert(normals.end(), quadrature.size(), normal);
               }
-            else if (precompute_dg_faces) // change to true if want to use
-                                          // precomputed dg
+            else if (precompute_dg_faces)
               {
+                // precomputes internal face quadratures for the whole cell.
+                // Compare to function that computes internal face quadratures
+                // for a speciffic face.
                 auto p_unit_1 =
                   mapping->project_real_point_to_unit_point_on_face(
                     cell,
-                    dg_face_index,
+                    internal_face_index,
                     cgal_point_to_dealii_point<2>(p_cut_1));
 
                 auto p_unit_2 =
                   mapping->project_real_point_to_unit_point_on_face(
                     cell,
-                    dg_face_index,
+                    internal_face_index,
                     cgal_point_to_dealii_point<2>(p_cut_2));
 
                 Quadrature<1> quadrature =
@@ -537,12 +562,12 @@ namespace CGALWrappers
 
                 auto points  = quadrature.get_points();
                 auto weights = quadrature.get_weights();
-                dg_quadrature_points[dg_face_index].insert(
-                  dg_quadrature_points[dg_face_index].end(),
+                dg_quadrature_points[internal_face_index].insert(
+                  dg_quadrature_points[internal_face_index].end(),
                   points.begin(),
                   points.end());
-                dg_quadrature_weights[dg_face_index].insert(
-                  dg_quadrature_weights[dg_face_index].end(),
+                dg_quadrature_weights[internal_face_index].insert(
+                  dg_quadrature_weights[internal_face_index].end(),
                   weights.begin(),
                   weights.end());
               }
@@ -618,7 +643,9 @@ namespace CGALWrappers
     std::vector<Point<3>>     quadrature_points;
     std::vector<double>       quadrature_weights;
     std::vector<Tensor<1, 3>> normals;
-    double ref_area = std::pow(cell->minimum_vertex_distance(), 2) * 1000 * std::numeric_limits<double>::epsilon();
+    // e-10 * cell area (0.00000001% of cell area) is used as threshold.
+    double ref_area = std::pow(cell->minimum_vertex_distance(), 2) * 1000000 *
+                      std::numeric_limits<double>::epsilon();
     for (const auto &out_surface_face : out_surface.faces())
       {
         if (CGAL::abs(CGAL::Polygon_mesh_processing::face_area(out_surface_face,
@@ -703,6 +730,7 @@ namespace CGALWrappers
         else if (precompute_dg_faces) // change to true if want to use
                                       // precomputed dg
           {
+            // TODO
           }
       }
     quad_surface = NonMatching::ImmersedSurfaceQuadrature<3>(quadrature_points,
@@ -943,7 +971,8 @@ namespace CGALWrappers
 
   template <>
   void
-  GridGridIntersectionQuadratureGenerator<2>::output_fitted_mesh(std::string filename) const
+  GridGridIntersectionQuadratureGenerator<2>::output_fitted_mesh(
+    std::string filename) const
   {
     std::ofstream out(filename + ".vtu");
     if (!out)
@@ -956,18 +985,18 @@ namespace CGALWrappers
     const std::size_t n = surface_mesh_2D.outer_boundary().size();
 
     out << R"(<?xml version="1.0"?>)"
-         << "\n";
+        << "\n";
     out
       << R"(<VTKFile type="UnstructuredGrid" version="0.1" byte_order="LittleEndian">)"
       << "\n";
     out << R"(  <UnstructuredGrid>)"
-         << "\n";
+        << "\n";
     out << R"(    <Piece NumberOfPoints=")" << n << R"(" NumberOfCells="1">)"
-         << "\n";
+        << "\n";
 
     // Points section
     out << R"(      <Points>)"
-         << "\n";
+        << "\n";
     out
       << R"(        <DataArray type="Float64" NumberOfComponents="3" format="ascii">)"
       << "\n";
@@ -979,14 +1008,14 @@ namespace CGALWrappers
     out << "\n";
 
     out << R"(        </DataArray>)"
-         << "\n";
+        << "\n";
     out << R"(      </Points>)"
-         << "\n";
+        << "\n";
 
     // Cells section
     // Connectivity: indices of vertices in order
     out << R"(      <Cells>)"
-         << "\n";
+        << "\n";
 
     // Connectivity
     out
@@ -996,13 +1025,13 @@ namespace CGALWrappers
         out << i << " ";
       }
     out << R"(</DataArray>)"
-         << "\n";
+        << "\n";
 
     // Offsets: cumulative count of vertices after each cell
     // Here only one cell with n vertices
     out << R"(        <DataArray type="Int32" Name="offsets" format="ascii">)";
     out << n << R"(</DataArray>)"
-         << "\n";
+        << "\n";
 
     // Types: VTK cell type for polygon is 7
     // (See https://vtk.org/wp-content/uploads/2015/04/file-formats.pdf)
@@ -1011,24 +1040,25 @@ namespace CGALWrappers
       << "\n";
 
     out << R"(      </Cells>)"
-         << "\n";
+        << "\n";
 
     out << R"(    </Piece>)"
-         << "\n";
+        << "\n";
     out << R"(  </UnstructuredGrid>)"
-         << "\n";
+        << "\n";
     out << R"(</VTKFile>)"
-         << "\n";
+        << "\n";
 
     out.close();
   }
 
   template <>
   void
-  GridGridIntersectionQuadratureGenerator<3>::output_fitted_mesh(std::string filename) const
+  GridGridIntersectionQuadratureGenerator<3>::output_fitted_mesh(
+    std::string filename) const
   {
-    //maybe instead write_STL which supports std:ostream
-    //https://doc.cgal.org/latest/BGL/group__PkgBGLIoFuncsSTL.html#ga3523577d7d6413202f71b853c6c1316f
+    // maybe instead write_STL which supports std:ostream
+    // https://doc.cgal.org/latest/BGL/group__PkgBGLIoFuncsSTL.html#ga3523577d7d6413202f71b853c6c1316f
     CGAL::IO::write_polygon_mesh(filename + ".stl", surface_mesh_3D);
   }
 

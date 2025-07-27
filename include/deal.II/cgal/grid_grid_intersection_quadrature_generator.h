@@ -140,6 +140,25 @@ namespace CGALWrappers
     output_fitted_mesh(std::string filename = "surface_mesh") const;
 
   private:
+    void
+    set_inside_domain()
+    {
+      // What is considered inside or outside the domain depends on the input of
+      // the user
+      if (boolean_operation == BooleanOperation::compute_intersection)
+        {
+          inside_domain = CGAL::ON_BOUNDED_SIDE;
+        }
+      else if (boolean_operation == BooleanOperation::compute_difference)
+        {
+          inside_domain = CGAL::ON_UNBOUNDED_SIDE;
+        }
+      else
+        {
+          DEAL_II_ASSERT_UNREACHABLE();
+        }
+    }
+
     CGAL::Bounded_side
     side_of_surface_mesh(const Point<dim> &point) const;
 
@@ -147,6 +166,7 @@ namespace CGALWrappers
     const Mapping<dim> *mapping;
     unsigned int        n_quadrature_points_1D;
     BooleanOperation    boolean_operation;
+    CGAL::Bounded_side  inside_domain;
     bool                precompute_dg_faces;
 
     CGALPolygonWithHoles surface_mesh_2D;
