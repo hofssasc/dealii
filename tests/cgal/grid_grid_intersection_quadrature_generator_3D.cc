@@ -161,11 +161,13 @@ test(unsigned int refinement_domain, unsigned int refinement_boundary)
           deallog << "Area :" << measure << " , surface :" << surface
                   << std::endl;
 
-          ggi_quadrature_generator.clear();
           deallog << std::endl;
         }
       tria_boundary.clear();
     }
+    ggi_quadrature_generator.clear_cell_locations();
+    ggi_quadrature_generator.clear_quadratures();
+    ggi_quadrature_generator.clear_domain_boundary();
 }
 
 

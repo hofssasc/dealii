@@ -56,24 +56,33 @@ for (dim : SPACE_DIMENSIONS)
     GridGridIntersectionQuadratureGenerator<dim>::set_n_quadrature_points_1D(
       unsigned int n_quadrature_points_1D_in);
 
-    template NonMatching::ImmersedSurfaceQuadrature<dim>
+    template void
+    GridGridIntersectionQuadratureGenerator<dim>::clear_cell_locations();
+
+    template void
+    GridGridIntersectionQuadratureGenerator<dim>::clear_quadratures();
+
+    template void
+    GridGridIntersectionQuadratureGenerator<dim>::clear_domain_boundary();
+
+    template const NonMatching::ImmersedSurfaceQuadrature<dim> &
     GridGridIntersectionQuadratureGenerator<dim>::get_surface_quadrature()
       const;
 
-    template Quadrature<dim>
+    template const Quadrature<dim> &
     GridGridIntersectionQuadratureGenerator<dim>::get_inside_quadrature() const;
 
-    template Quadrature<dim>
+    template const Quadrature<dim> &
     GridGridIntersectionQuadratureGenerator<dim>::get_outside_quadrature()
       const;
 
-    template Quadrature<dim - 1> GridGridIntersectionQuadratureGenerator<
+    template const Quadrature<dim - 1> & GridGridIntersectionQuadratureGenerator<
       dim>::get_inside_quadrature_dg_face() const;
 
-    template Quadrature<dim - 1> GridGridIntersectionQuadratureGenerator<
+    template const Quadrature<dim - 1> & GridGridIntersectionQuadratureGenerator<
       dim>::get_outside_quadrature_dg_face() const;
 
-    template Quadrature<dim - 1>
+    template const Quadrature<dim - 1> &
     GridGridIntersectionQuadratureGenerator<dim>::get_inside_quadrature_dg_face(
       unsigned int face_index) const;
 
