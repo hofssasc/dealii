@@ -18,86 +18,28 @@ for (dim : SPACE_DIMENSIONS)
   {
 #if dim == 2 || dim == 3
 
-    template void
-    GridGridIntersectionQuadratureGenerator<dim>::setup_domain_boundary(
-      const parallel::distributed::Triangulation<dim> &tria_fitted_in);
+    template class GridGridIntersectionQuadratureGenerator<dim>;
 
     template void
     GridGridIntersectionQuadratureGenerator<dim>::setup_domain_boundary(
-      const Triangulation<dim> &tria_fitted_in);
-
-    template CGAL::Bounded_side
-    GridGridIntersectionQuadratureGenerator<dim>::side_of_surface_mesh(
-      const Point<dim> &point) const;
+      const Triangulation<dim> &);
 
     template void GridGridIntersectionQuadratureGenerator<dim>::reclassify(
-      const parallel::distributed::Triangulation<dim> &tria_unfitted);
+      const Triangulation<dim> &);
+    template void
+    GridGridIntersectionQuadratureGenerator<dim>::partition_surface_mesh(
+      const Triangulation<dim> &);
+
+    template void
+    GridGridIntersectionQuadratureGenerator<dim>::setup_domain_boundary(
+      const parallel::distributed::Triangulation<dim> &);
 
     template void GridGridIntersectionQuadratureGenerator<dim>::reclassify(
-      const Triangulation<dim> &tria_unfitted);
-
-    template GridGridIntersectionQuadratureGenerator<
-      dim>::GridGridIntersectionQuadratureGenerator();
-
-    template GridGridIntersectionQuadratureGenerator<dim>::
-      GridGridIntersectionQuadratureGenerator(
-        const Mapping<dim> &mapping_in,
-        unsigned int        n_quadrature_points_1D_in,
-        BooleanOperation    boolean_operation_in,
-        bool                precompute_dg_faces_in = false);
-
-    template void GridGridIntersectionQuadratureGenerator<dim>::reinit(
-      const Mapping<dim> &mapping_in,
-      unsigned int        n_quadrature_points_1D_in,
-      BooleanOperation    boolean_operation_in,
-      bool                precompute_dg_faces_in = false);
+      const parallel::distributed::Triangulation<dim> &);
 
     template void
-    GridGridIntersectionQuadratureGenerator<dim>::set_n_quadrature_points_1D(
-      unsigned int n_quadrature_points_1D_in);
-
-    template void
-    GridGridIntersectionQuadratureGenerator<dim>::clear_cell_locations();
-
-    template void
-    GridGridIntersectionQuadratureGenerator<dim>::clear_quadratures();
-
-    template void
-    GridGridIntersectionQuadratureGenerator<dim>::clear_domain_boundary();
-
-    template const NonMatching::ImmersedSurfaceQuadrature<dim> &
-    GridGridIntersectionQuadratureGenerator<dim>::get_surface_quadrature()
-      const;
-
-    template const Quadrature<dim> &
-    GridGridIntersectionQuadratureGenerator<dim>::get_inside_quadrature() const;
-
-    template const Quadrature<dim> &
-    GridGridIntersectionQuadratureGenerator<dim>::get_outside_quadrature()
-      const;
-
-    template const Quadrature<dim - 1> & GridGridIntersectionQuadratureGenerator<
-      dim>::get_inside_quadrature_dg_face() const;
-
-    template const Quadrature<dim - 1> & GridGridIntersectionQuadratureGenerator<
-      dim>::get_outside_quadrature_dg_face() const;
-
-    template const Quadrature<dim - 1> &
-    GridGridIntersectionQuadratureGenerator<dim>::get_inside_quadrature_dg_face(
-      unsigned int face_index) const;
-
-    template NonMatching::LocationToLevelSet
-    GridGridIntersectionQuadratureGenerator<dim>::location_to_geometry(
-      unsigned int cell_index) const;
-
-    template NonMatching::LocationToLevelSet
-    GridGridIntersectionQuadratureGenerator<dim>::location_to_geometry(
-      const typename Triangulation<dim>::cell_iterator &cell) const;
-
-    template NonMatching::LocationToLevelSet
-    GridGridIntersectionQuadratureGenerator<dim>::location_to_geometry(
-      const typename Triangulation<dim>::cell_iterator &cell,
-      unsigned int                                      face_index) const;
+    GridGridIntersectionQuadratureGenerator<dim>::partition_surface_mesh(
+      const parallel::distributed::Triangulation<dim> &);
 
 #endif
   }

@@ -16,6 +16,8 @@
 
 #include <deal.II/cgal/grid_grid_intersection_quadrature_generator.h>
 
+#include <deal.II/grid/grid_tools.h>
+
 #include <CGAL/Boolean_set_operations_2.h> //check if necessary
 
 DEAL_II_NAMESPACE_OPEN
@@ -35,7 +37,8 @@ namespace CGALWrappers
   {
     Assert(
       dim == 2 || dim == 3,
-      ExcMessage("Constructed a GridGridIntersectionQuadratureGenerator for a dim that is not 2D or 3D"));
+      ExcMessage(
+        "Constructed a GridGridIntersectionQuadratureGenerator for a dim that is not 2D or 3D"));
   };
 
   template <int dim>
@@ -52,10 +55,13 @@ namespace CGALWrappers
   {
     Assert(
       dim == 2 || dim == 3,
-      ExcMessage("Constructed a GridGridIntersectionQuadratureGenerator for a dim that is not 2D or 3D"));
-    Assert(boolean_operation_in == BooleanOperation::compute_intersection ||
-             boolean_operation_in == BooleanOperation::compute_difference,
-           ExcMessage("Constructed a GridGridIntersectionQuadratureGenerator with a BooleanOperation that is not compute_intersection or compute_difference"));
+      ExcMessage(
+        "Constructed a GridGridIntersectionQuadratureGenerator for a dim that is not 2D or 3D"));
+    Assert(
+      boolean_operation_in == BooleanOperation::compute_intersection ||
+        boolean_operation_in == BooleanOperation::compute_difference,
+      ExcMessage(
+        "Constructed a GridGridIntersectionQuadratureGenerator with a BooleanOperation that is not compute_intersection or compute_difference"));
 
     // What is considered inside or outside the domain depends on the input of
     // the user
@@ -74,10 +80,12 @@ namespace CGALWrappers
     n_quadrature_points_1D = n_quadrature_points_1D_in;
     precompute_dg_faces    = precompute_dg_faces_in;
 
-    Assert(boolean_operation_in == BooleanOperation::compute_intersection ||
-             boolean_operation_in == BooleanOperation::compute_difference,
-           ExcMessage("Constructed a GridGridIntersectionQuadratureGenerator with a BooleanOperation that is not compute_intersection or compute_difference"));
-    boolean_operation      = boolean_operation_in;
+    Assert(
+      boolean_operation_in == BooleanOperation::compute_intersection ||
+        boolean_operation_in == BooleanOperation::compute_difference,
+      ExcMessage(
+        "Constructed a GridGridIntersectionQuadratureGenerator with a BooleanOperation that is not compute_intersection or compute_difference"));
+    boolean_operation = boolean_operation_in;
     // What is considered inside or outside the domain depends on the input of
     // the user
     set_inside_domain();
@@ -106,7 +114,7 @@ namespace CGALWrappers
   {
     quad_cells   = Quadrature<dim>();
     quad_surface = NonMatching::ImmersedSurfaceQuadrature<dim>();
-    quad_dg_face = Quadrature<dim-1>();
+    quad_dg_face = Quadrature<dim - 1>();
     quad_dg_face_vec.clear();
   }
 
@@ -271,7 +279,6 @@ namespace CGALWrappers
   GridGridIntersectionQuadratureGenerator<dim>::reclassify(
     const TriangulationType &tria_unfitted)
   {
-    quad_dg_face_vec.clear(); // move somewhere else!!
     cell_locations.assign(tria_unfitted.n_active_cells(),
                           NonMatching::LocationToLevelSet::unassigned);
     face_locations.assign(tria_unfitted.n_raw_faces(),
@@ -369,6 +376,99 @@ namespace CGALWrappers
         // boundary but is ignored because otherwise the boundary integral would
         // be performed twice.
       }
+  }
+
+  template <>
+  template <typename TriangulationType>
+  void
+  GridGridIntersectionQuadratureGenerator<2>::partition_surface_mesh(
+    const TriangulationType &tria_unfitted_in)
+  {
+    auto predicate =
+      [this](const typename Triangulation<2>::active_cell_iterator &cell) {
+        return !cell->is_artificial() &&
+               this->location_to_geometry(cell) ==
+                 NonMatching::LocationToLevelSet::intersected;
+      };
+    auto boundingbox =
+      GridTools::compute_bounding_box(tria_unfitted_in, predicate);
+
+    CGALPolygon polygon;
+    polygon.push_back(
+      dealii_point_to_cgal_point<CGALPoint2, 2>(boundingbox.first));
+    polygon.push_back(dealii_point_to_cgal_point<CGALPoint2, 2>(
+      {boundingbox.second[0], boundingbox.first[1]}));
+    polygon.push_back(
+      dealii_point_to_cgal_point<CGALPoint2, 2>(boundingbox.second));
+    polygon.push_back(dealii_point_to_cgal_point<CGALPoint2, 2>(
+      {boundingbox.first[0], boundingbox.second[1]}));
+
+    CGALPolygonWithHoles polygon_w_h(polygon);
+
+    // cut surface mesh with bounding box
+    auto partition =
+      compute_boolean_operation<K>(polygon_w_h,
+                                   surface_mesh_2D,
+                                   BooleanOperation::compute_intersection);
+    Assert(partition.size() == 1,
+           ExcMessage("Partitioning resulted in two disconected polygons"));
+    if (partition.size() == 1)
+      surface_mesh_2D = partition[0];
+  }
+
+  template <>
+  template <typename TriangulationType>
+  void
+  GridGridIntersectionQuadratureGenerator<3>::partition_surface_mesh(
+    const TriangulationType &tria_unfitted_in)
+  {
+    auto predicate =
+      [this](const typename Triangulation<3>::active_cell_iterator &cell) {
+        return !cell->is_artificial() &&
+               this->location_to_geometry(cell) ==
+                 NonMatching::LocationToLevelSet::intersected;
+      };
+    auto boundingbox =
+      GridTools::compute_bounding_box(tria_unfitted_in, predicate);
+
+    CGAL::Surface_mesh<CGALPoint>                            cube;
+    std::vector<CGAL::Surface_mesh<CGALPoint>::Vertex_index> v(8);
+    // bottom quad vertices
+    v[0] = cube.add_vertex(
+      dealii_point_to_cgal_point<CGALPoint, 3>(boundingbox.first));
+    v[1] = cube.add_vertex(dealii_point_to_cgal_point<CGALPoint, 3>(
+      {boundingbox.second[0], boundingbox.first[1], boundingbox.first[2]}));
+    v[2] = cube.add_vertex(dealii_point_to_cgal_point<CGALPoint, 3>(
+      {boundingbox.second[0], boundingbox.second[1], boundingbox.first[2]}));
+    v[3] = cube.add_vertex(dealii_point_to_cgal_point<CGALPoint, 3>(
+      {boundingbox.first[0], boundingbox.second[1], boundingbox.first[2]}));
+    // top quad vertices
+    v[4] = cube.add_vertex(dealii_point_to_cgal_point<CGALPoint, 3>(
+      {boundingbox.first[0], boundingbox.first[1], boundingbox.second[2]}));
+    v[5] = cube.add_vertex(dealii_point_to_cgal_point<CGALPoint, 3>(
+      {boundingbox.second[0], boundingbox.first[1], boundingbox.second[2]}));
+    v[6] = cube.add_vertex(
+      dealii_point_to_cgal_point<CGALPoint, 3>(boundingbox.second));
+    v[7] = cube.add_vertex(dealii_point_to_cgal_point<CGALPoint, 3>(
+      {boundingbox.first[0], boundingbox.second[1], boundingbox.second[2]}));
+
+    // bottom
+    cube.add_face(v[0], v[3], v[2], v[1]);
+    // top
+    cube.add_face(v[4], v[5], v[6], v[7]);
+    // sides
+    cube.add_face(v[1], v[2], v[6], v[5]);
+    cube.add_face(v[6], v[2], v[3], v[7]);
+    cube.add_face(v[4], v[7], v[3], v[0]);
+    cube.add_face(v[4], v[0], v[1], v[5]);
+
+    CGAL::Polygon_mesh_processing::triangulate_faces(cube);
+    CGAL::Surface_mesh<CGALPoint> out_surface;
+    compute_boolean_operation(cube,
+                              surface_mesh_3D,
+                              BooleanOperation::compute_intersection,
+                              out_surface);
+    surface_mesh_3D = out_surface;
   }
 
   template <>
@@ -587,6 +687,7 @@ namespace CGALWrappers
 
     if (precompute_dg_faces)
       {
+        quad_dg_face_vec.resize(cell->n_faces());
         for (const unsigned int i : cell->face_indices())
           {
             quad_dg_face_vec[i] =
@@ -671,7 +772,7 @@ namespace CGALWrappers
             continue;
           }
 
-        unsigned int             internal_face_index = numbers::invalid_unsigned_int;
+        unsigned int internal_face_index = numbers::invalid_unsigned_int;
         std::array<CGALPoint, 3> simplex;
         int                      i = 0;
         for (const auto &vertex :
@@ -746,25 +847,29 @@ namespace CGALWrappers
         else if (precompute_dg_faces)
           {
             std::array<Point<2>, 3> unit_simplex;
-    
-            for(unsigned int i = 0; i < unit_simplex.size(); ++i)
-            {
-              unit_simplex[i] = mapping->project_real_point_to_unit_point_on_face(
-                cell, internal_face_index, cgal_point_to_dealii_point<3>(simplex[i]));
-            }
 
-            auto quadrature = QGaussSimplex<2>(n_quadrature_points_1D).compute_affine_transformation(unit_simplex);
+            for (unsigned int i = 0; i < unit_simplex.size(); ++i)
+              {
+                unit_simplex[i] =
+                  mapping->project_real_point_to_unit_point_on_face(
+                    cell,
+                    internal_face_index,
+                    cgal_point_to_dealii_point<3>(simplex[i]));
+              }
+
+            auto quadrature = QGaussSimplex<2>(n_quadrature_points_1D)
+                                .compute_affine_transformation(unit_simplex);
 
             const auto &points  = quadrature.get_points();
             const auto &weights = quadrature.get_weights();
             dg_quadrature_points[internal_face_index].insert(
-                  dg_quadrature_points[internal_face_index].end(),
-                  points.begin(),
-                  points.end());
+              dg_quadrature_points[internal_face_index].end(),
+              points.begin(),
+              points.end());
             dg_quadrature_weights[internal_face_index].insert(
-                  dg_quadrature_weights[internal_face_index].end(),
-                  weights.begin(),
-                  weights.end());
+              dg_quadrature_weights[internal_face_index].end(),
+              weights.begin(),
+              weights.end());
           }
       }
     quad_surface = NonMatching::ImmersedSurfaceQuadrature<3>(quadrature_points,
@@ -773,6 +878,7 @@ namespace CGALWrappers
 
     if (precompute_dg_faces)
       {
+        quad_dg_face_vec.resize(cell->n_faces());
         for (const unsigned int i : cell->face_indices())
           {
             quad_dg_face_vec[i] =

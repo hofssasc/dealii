@@ -1,56 +1,78 @@
 
 DEAL::name: hyper_cube
 DEAL::Area :0.00000 , surface :0.00000
+DEAL::surface_dg :0.00000 ,surface_dg_precomputed :0.00000
 DEAL::
 DEAL::Area :1.00000 , surface :4.00000
+DEAL::surface_dg :4.00000 ,surface_dg_precomputed :4.00000
 DEAL::
 DEAL::name: hyper_cube
 DEAL::Area :0.190000 , surface :4.00000
+DEAL::surface_dg :0.400000 ,surface_dg_precomputed :0.400000
 DEAL::
 DEAL::Area :0.810000 , surface :3.60000
+DEAL::surface_dg :3.60000 ,surface_dg_precomputed :3.60000
 DEAL::
 DEAL::name: hyper_rectangle
 DEAL::Area :0.500000 , surface :3.00000
+DEAL::surface_dg :1.00000 ,surface_dg_precomputed :1.00000
 DEAL::
 DEAL::Area :0.500000 , surface :3.00000
+DEAL::surface_dg :1.00000 ,surface_dg_precomputed :1.00000
 DEAL::
 DEAL::name: hyper_rectangle
 DEAL::Area :0.500000 , surface :3.00000
+DEAL::surface_dg :1.00000 ,surface_dg_precomputed :1.00000
 DEAL::
 DEAL::Area :0.500000 , surface :3.00000
+DEAL::surface_dg :1.00000 ,surface_dg_precomputed :1.00000
 DEAL::
 DEAL::name: hyper_rectangle
 DEAL::Area :1.00000 , surface :4.00000
+DEAL::surface_dg :4.00000 ,surface_dg_precomputed :4.00000
 DEAL::
 DEAL::Area :0.00000 , surface :0.00000
+DEAL::surface_dg :0.00000 ,surface_dg_precomputed :0.00000
 DEAL::
 DEAL::name: simplex
 DEAL::Area :0.500000 , surface :3.41421
+DEAL::surface_dg :2.00000 ,surface_dg_precomputed :2.00000
 DEAL::
 DEAL::Area :0.500000 , surface :3.41421
+DEAL::surface_dg :2.00000 ,surface_dg_precomputed :2.00000
 DEAL::
 DEAL::name: simplex
 DEAL::Area :0.680000 , surface :3.53137
+DEAL::surface_dg :2.80000 ,surface_dg_precomputed :2.80000
 DEAL::
 DEAL::Area :0.320000 , surface :2.73137
+DEAL::surface_dg :1.20000 ,surface_dg_precomputed :1.20000
 DEAL::
 DEAL::name: simplex
 DEAL::Area :0.750000 , surface :4.41421
+DEAL::surface_dg :3.00000 ,surface_dg_precomputed :3.00000
 DEAL::
 DEAL::Area :0.250000 , surface :2.41421
+DEAL::surface_dg :1.00000 ,surface_dg_precomputed :1.00000
 DEAL::
 DEAL::name: hyper_ball_balanced
 DEAL::Area :0.234633 , surface :3.56072
+DEAL::surface_dg :0.618036 ,surface_dg_precomputed :0.618036
 DEAL::
 DEAL::Area :0.765367 , surface :3.56072
+DEAL::surface_dg :3.38196 ,surface_dg_precomputed :3.38196
 DEAL::
 DEAL::name: hyper_ball_balanced
 DEAL::Area :0.857664 , surface :3.79829
+DEAL::surface_dg :4.00000 ,surface_dg_precomputed :4.00000
 DEAL::
 DEAL::Area :0.142336 , surface :1.55851
+DEAL::surface_dg :0.00000 ,surface_dg_precomputed :0.00000
 DEAL::
 DEAL::name: hyper_shell
 DEAL::Area :0.550000 , surface :7.10583
+DEAL::surface_dg :1.60000 ,surface_dg_precomputed :1.60000
 DEAL::
 DEAL::Area :0.450000 , surface :3.10583
+DEAL::surface_dg :2.40000 ,surface_dg_precomputed :2.40000
 DEAL::

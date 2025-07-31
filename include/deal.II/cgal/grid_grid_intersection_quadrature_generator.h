@@ -90,7 +90,7 @@ namespace CGALWrappers
 
     void
     clear_cell_locations();
-    
+
     void
     clear_quadratures();
 
@@ -104,6 +104,10 @@ namespace CGALWrappers
     template <typename TriangulationType>
     void
     reclassify(const TriangulationType &tria_unfitted_in);
+
+    template <typename TriangulationType>
+    void
+    partition_surface_mesh(const TriangulationType &tria_unfitted_in);
 
     void
     generate(const typename Triangulation<dim>::cell_iterator &cell);
@@ -130,8 +134,7 @@ namespace CGALWrappers
 
     // for precomputed dg_faces from generate
     const Quadrature<dim - 1> &
-    get_inside_quadrature_dg_face(
-      unsigned int face_index) const;
+    get_inside_quadrature_dg_face(unsigned int face_index) const;
 
     NonMatching::LocationToLevelSet
     location_to_geometry(unsigned int cell_index) const;

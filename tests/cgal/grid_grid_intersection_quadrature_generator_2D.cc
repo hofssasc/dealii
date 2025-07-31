@@ -80,19 +80,29 @@ test(unsigned int refinement_domain, unsigned int refinement_boundary)
 
       for (const auto &boolean_operation : boolean_operations)
         {
-          double measure = 0;
-          double surface = 0;
+          double measure                = 0;
+          double surface                = 0;
+          double surface_dg             = 0;
+          double surface_dg_precomputed = 0;
           ggi_quadrature_generator.reinit(mapping,
                                           quadrature_degree,
-                                          boolean_operation);
+                                          boolean_operation,
+                                          /*precompute*/ true);
           ggi_quadrature_generator.setup_domain_boundary(tria_boundary);
           ggi_quadrature_generator.reclassify(tria_domain);
 
+          // Volume and boundary quadratures
           std::vector<Quadrature<2>> vector_quadratures;
           std::vector<NonMatching::ImmersedSurfaceQuadrature<2>>
             vector_quadratures_surface;
           std::vector<typename Triangulation<2, 2>::cell_iterator>
             vector_accessors;
+          // Internal cell boundary quadratures
+          std::vector<Quadrature<1>> vector_dg_quadratures_precomputed;
+          std::vector<Quadrature<1>> vector_dg_quadratures;
+          std::vector<std::pair<typename Triangulation<2, 2>::cell_iterator,
+                                unsigned int>>
+            vector_dg_face_accessors;
           for (const auto &cell : tria_domain.active_cell_iterators())
             {
               auto classification =
@@ -106,10 +116,26 @@ test(unsigned int refinement_domain, unsigned int refinement_boundary)
                   vector_quadratures_surface.push_back(
                     ggi_quadrature_generator.get_surface_quadrature());
                   vector_accessors.push_back(cell);
+
+                  for (const unsigned int f : cell->face_indices())
+                    {
+                      // generate dg face quadrature and add
+                      ggi_quadrature_generator.generate_dg_face(cell, f);
+                      vector_dg_quadratures.push_back(
+                        ggi_quadrature_generator
+                          .get_inside_quadrature_dg_face());
+                      // add precomputed dg face quadrature
+                      vector_dg_quadratures_precomputed.push_back(
+                        ggi_quadrature_generator.get_inside_quadrature_dg_face(
+                          f));
+                      // add dg face accessor
+                      vector_dg_face_accessors.emplace_back(cell, f);
+                    }
                 }
               else if (classification ==
                        NonMatching::LocationToLevelSet::inside)
                 {
+                  // Contribution of non cut cells
                   measure += cell->measure();
                   for (const auto &face : cell->face_iterators())
                     {
@@ -117,10 +143,15 @@ test(unsigned int refinement_domain, unsigned int refinement_boundary)
                         {
                           surface += face->measure();
                         }
+                      else
+                      {
+                        surface_dg += face->measure();
+                        surface_dg_precomputed += face->measure();
+                      }
                     }
                 }
             }
-          // For volume integration
+          // for cell integration
           NonMatching::MappingInfo mapping_info(
             mapping,
             UpdateFlags::update_quadrature_points |
@@ -130,7 +161,7 @@ test(unsigned int refinement_domain, unsigned int refinement_boundary)
                                                               finite_element);
           mapping_info.reinit_cells(vector_accessors, vector_quadratures);
 
-          // For area integration
+          // for surface integration
           NonMatching::MappingInfo mapping_info_surface(
             mapping,
             UpdateFlags::update_quadrature_points |
@@ -141,7 +172,8 @@ test(unsigned int refinement_domain, unsigned int refinement_boundary)
           mapping_info_surface.reinit_surface(vector_accessors,
                                               vector_quadratures_surface);
 
-          for (size_t i = 0; i < vector_accessors.size(); i++)
+          // Contribution of cut cells.
+          for (unsigned int i = 0; i < vector_accessors.size(); i++)
             {
               point_evaluation.reinit(i);
               for (unsigned int q : point_evaluation.quadrature_point_indices())
@@ -155,16 +187,65 @@ test(unsigned int refinement_domain, unsigned int refinement_boundary)
                   surface += point_evaluation_surface.JxW(q);
                 }
             }
+
+          // for internal surface integration
+          NonMatching::MappingInfo mapping_info_internal_surface(
+            mapping,
+            UpdateFlags::update_quadrature_points |
+              UpdateFlags::update_JxW_values);
+
+          FEFacePointEvaluation<1, 2, 2, double>
+            point_evaluation_internal_surface(mapping_info_internal_surface,
+                                              finite_element);
+          mapping_info_internal_surface.reinit_faces(vector_dg_face_accessors,
+                                                     vector_dg_quadratures);
+
+          // for precomputed internal surface integration
+          NonMatching::MappingInfo mapping_info_internal_surface_precomputed(
+            mapping,
+            UpdateFlags::update_quadrature_points |
+              UpdateFlags::update_JxW_values);
+
+          FEFacePointEvaluation<1, 2, 2, double>
+            point_evaluation_internal_surface_precomputed(
+              mapping_info_internal_surface_precomputed, finite_element);
+          mapping_info_internal_surface_precomputed.reinit_faces(
+            vector_dg_face_accessors, vector_dg_quadratures_precomputed);
+
+          // this test for dg_faces integrates over each face twice because
+          // for dg flux a positive and negative side integral is needed.
+          // Moreover not cut cells are not considered and need to be handled
+          // seperately.
+          for (unsigned int i = 0; i < vector_dg_face_accessors.size(); ++i)
+            {
+              point_evaluation_internal_surface.reinit(i);
+              for (unsigned int q :
+                   point_evaluation_internal_surface.quadrature_point_indices())
+                {
+                  surface_dg += point_evaluation_internal_surface.JxW(q);
+                }
+              point_evaluation_internal_surface_precomputed.reinit(i);
+              for (unsigned int q :
+                   point_evaluation_internal_surface_precomputed
+                     .quadrature_point_indices())
+                {
+                  surface_dg_precomputed +=
+                    point_evaluation_internal_surface_precomputed.JxW(q);
+                }
+            }
+
           deallog << "Area :" << measure << " , surface :" << surface
                   << std::endl;
-
+          deallog << "surface_dg :" << surface_dg
+                  << " ,surface_dg_precomputed :" << surface_dg_precomputed
+                  << std::endl;
           deallog << std::endl;
         }
       tria_boundary.clear();
     }
-    ggi_quadrature_generator.clear_cell_locations();
-    ggi_quadrature_generator.clear_quadratures();
-    ggi_quadrature_generator.clear_domain_boundary();
+  ggi_quadrature_generator.clear_cell_locations();
+  ggi_quadrature_generator.clear_quadratures();
+  ggi_quadrature_generator.clear_domain_boundary();
 }
 
 
